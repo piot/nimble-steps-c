@@ -1,0 +1,12 @@
+depsversion = "0.0.0"
+
+name = "piot/nimble-steps-c"
+version = "0.0.0"
+
+[[dependencies]]
+name = 'piot/flood-c'
+version = "*"
+
+[[dependencies]]
+name = 'piot/discoid-c'
+version = "*"
