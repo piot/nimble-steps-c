@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 struct FldInStream;
 
@@ -57,5 +58,6 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
 void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, int flags);
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug);
 void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug);
+bool nbsPendingStepsLatestStepId(const NbsPendingSteps* self, StepId* id);
 
 #endif // NIMBLE_STEPS_EXAMPLE_PENDING_STEPS_H

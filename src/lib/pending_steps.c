@@ -205,6 +205,19 @@ void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask,
               printBits(receiveMask));
 }
 
+bool nbsPendingStepsLatestStepId(const NbsPendingSteps* self, StepId* id)
+{
+    if (self->debugCount == 0) {
+        *id = NIMBLE_STEP_MAX;
+        return false;
+    }
+
+    *id = self->expectingWriteId - 1;
+
+    return true;
+}
+
+
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug)
 {
     nbsPendingStepsDebugReceiveMaskExt(self->expectingWriteId, self->receiveMask, debug);
