@@ -89,7 +89,7 @@ size_t nbsStepsCount(const NbsSteps* self)
 }
 
 #define NBS_ADVANCE(index) index = (index + 1) % NBS_WINDOW_SIZE
-#define NBS_RETREAT(index) index = tc_modulo((index - 1),  NBS_WINDOW_SIZE)
+//#define NBS_RETREAT(index) index = tc_modulo((index - 1),  NBS_WINDOW_SIZE)
 
 static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
 {
