@@ -34,7 +34,7 @@ typedef struct NbsSteps {
 
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount);
 size_t nbsStepsDropped(const NbsSteps* self, StepId firstReadStepId);
-void nbsStepsInit(NbsSteps* self, size_t maxTarget, StepId startId);
+void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxTarget, StepId startId);
 void nbsStepsDestroy(NbsSteps* self);
 void nbsStepsReInit(NbsSteps* self, StepId initialId);
 void nbsStepsReset(NbsSteps* self);

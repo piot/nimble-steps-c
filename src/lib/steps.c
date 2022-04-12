@@ -66,10 +66,10 @@ void nbsStepsReset(NbsSteps* self)
     nbsStepsReInit(self, NIMBLE_STEP_MAX);
 }
 
-void nbsStepsInit(NbsSteps* self, size_t maxOctets, StepId initialId)
+void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxOctets, StepId initialId)
 {
     tc_mem_clear_type(self);
-    discoidBufferInit(&self->stepsData, maxOctets);
+    discoidBufferInit(&self->stepsData, allocator, maxOctets);
     nbsStepsReInit(self, initialId);
 }
 
