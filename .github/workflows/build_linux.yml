@@ -16,9 +16,6 @@ jobs:
         with:
           cmake-version: "3.22.x"
 
-      - name: Force clang for cmake
-        run: export CC=/usr/bin/clang
-
       - name: Install Go
         uses: actions/setup-go@v2
         with:
@@ -39,6 +36,6 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: Nimble Steps Linux Library
+          name: nimble-steps Linux Library
           path: |
-            src/libnimble-steps.a
+            src/libnimble_steps.a
