@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 #include <clog/clog.h>
+#include <imprint/allocator.h>
 #include <nimble-steps/pending_steps.h>
 #include <tiny-libc/tiny_libc.h>
 
@@ -11,29 +12,30 @@ static void nbsPendingStepDebugOutput(const NbsPendingStep* self, int index, con
     // CLOG_INFO("%d: %08X %s (octet count:%zu)", index, self->idForDebug, name, self->payloadLength);
 }
 
-void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug)
+void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug, struct ImprintAllocatorWithFree* allocatorWithFree)
 {
     self->idForDebug = idForDebug;
     self->payloadLength = payloadLength;
     if (payloadLength > 0) {
-        self->payload = tc_malloc(payloadLength);
+        self->payload = IMPRINT_ALLOC((ImprintAllocator *)allocatorWithFree, payloadLength, "nbsPendingStepInit");
     } else {
         self->payload = 0;
     }
     self->isInUse = 1;
+    self->allocatorWithFree = allocatorWithFree;
     tc_memcpy_octets((uint8_t*) self->payload, payload, payloadLength);
 }
 
 void nbsPendingStepDestroy(NbsPendingStep* self)
 {
-    tc_free((uint8_t*) self->payload);
+    IMPRINT_FREE(self->allocatorWithFree, self->payload);
     self->payloadLength = 0;
     self->payload = 0;
     self->idForDebug = NIMBLE_STEP_MAX;
 }
 
 
-void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId)
+void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAllocatorWithFree* allocatorWithFree)
 {
     self->debugCount = 0;
     self->readIndex = 0;
@@ -42,12 +44,13 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId)
     self->expectingWriteId = lateJoinStepId;
     self->receiveMask = NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED; // If we don't mark everything as received, we
                                                                         // will get resent old steps
+    self->allocatorWithFree = allocatorWithFree;
     tc_mem_clear_type_n(self->steps, NIMBLE_STEPS_PENDING_WINDOW_SIZE);
 }
 
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId)
 {
-    nbsPendingStepsInit(self, lateJoinStepId);
+    nbsPendingStepsInit(self, lateJoinStepId, self->allocatorWithFree);
 }
 
 
@@ -293,8 +296,10 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
         uint64_t maskForThisStep = 1ULL << bitsFromHead;
         self->receiveMask |= maskForThisStep;
     }
-    tc_free((void*) existingStep->payload);
-    nbsPendingStepInit(existingStep, payload, payloadLength, stepId);
+    if (existingStep->payload) {
+      IMPRINT_FREE(self->allocatorWithFree, (void *)existingStep->payload);
+    }
+    nbsPendingStepInit(existingStep, payload, payloadLength, stepId, self->allocatorWithFree);
     self->debugCount++;
     return 1;
 }

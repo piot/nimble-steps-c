@@ -13,12 +13,15 @@
 #include <stdbool.h>
 
 struct FldInStream;
+struct ImprintAllocator;
+struct ImprintAllocatorWithFree;
 
 typedef struct NbsPendingStep {
     const uint8_t* payload;
     size_t payloadLength;
     StepId idForDebug;
     int isInUse;
+    struct ImprintAllocatorWithFree* allocatorWithFree;
 } NbsPendingStep;
 
 typedef struct NbsPendingRange {
@@ -28,7 +31,7 @@ typedef struct NbsPendingRange {
 
 #define NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED (UINT64_MAX)
 
-void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug);
+void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug, struct ImprintAllocatorWithFree* allocator);
 void nbsPendingStepDestroy(NbsPendingStep* self);
 
 
@@ -40,13 +43,14 @@ typedef struct NbsPendingSteps {
     StepId expectingWriteId;
     StepId readId;
     uint64_t receiveMask;
+    struct ImprintAllocatorWithFree* allocatorWithFree;
 } NbsPendingSteps;
 
 int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxCount,
                           size_t stepMaxCount);
 void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount);
 
-void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId);
+void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, struct ImprintAllocatorWithFree* allocatorWithFree);
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId);
 void nbsPendingStepsSerializeIn(NbsPendingSteps* self, struct FldInStream* stream);
 int nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self);
