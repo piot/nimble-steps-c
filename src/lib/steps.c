@@ -84,10 +84,6 @@ int nbsStepsAllowedToAdd(const NbsSteps* self)
     return self->stepsCount < 24;
 }
 
-size_t nbsStepsCount(const NbsSteps* self)
-{
-    return self->stepsCount;
-}
 
 #define NBS_ADVANCE(index) index = (index + 1) % NBS_WINDOW_SIZE
 //#define NBS_RETREAT(index) index = tc_modulo((index - 1),  NBS_WINDOW_SIZE)

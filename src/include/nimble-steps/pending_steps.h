@@ -54,15 +54,14 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, struct Im
 int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self);
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId);
 void nbsPendingStepsSerializeIn(NbsPendingSteps* self, struct FldInStream* stream);
-int nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self);
+bool nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self);
 int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_t* outLength, StepId* outId);
 int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id);
-int nbsPendingStepsHasStep(const NbsPendingSteps* self, StepId stepId);
+bool nbsPendingStepsHasStep(const NbsPendingSteps* self, StepId stepId);
 uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId);
 int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* payload, size_t payloadLength);
 void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, int flags);
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug);
 void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug);
-bool nbsPendingStepsLatestStepId(const NbsPendingSteps* self, StepId* id);
 
 #endif // NIMBLE_STEPS_EXAMPLE_PENDING_STEPS_H

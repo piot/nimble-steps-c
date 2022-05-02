@@ -57,7 +57,10 @@ void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId)
     nbsPendingStepsInit(self, lateJoinStepId, self->allocatorWithFree);
 }
 
-int nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self) { return (self->steps[self->readIndex].payload != 0); }
+bool nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self)
+{
+    return (self->steps[self->readIndex].payload != 0);
+}
 
 int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
 {
@@ -106,7 +109,6 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
 
     while (true) {
         int count = nbsPendingStepsTryRead(self, &data, &length, &outId);
-
         if (count == 0) {
             return 0;
         }
@@ -171,21 +173,6 @@ void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char*
     }
 }
 
-int nbsPendingStepsHasStep(const NbsPendingSteps* self, StepId stepId)
-{
-    if (self->debugCount == 0) {
-        return 0;
-    }
-    if (stepId >= self->expectingWriteId) {
-        return 0;
-    }
-    size_t indexBackward = self->expectingWriteId - stepId;
-    if (indexBackward >= self->debugCount) {
-        return 0;
-    }
-    return indexBackward;
-}
-
 static const char* printBitPosition(size_t count)
 {
     static char buf[(64 + 1 + 8 + 8) * 2 + 1];
@@ -234,18 +221,6 @@ void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask,
 {
     CLOG_INFO("'%s' pending steps receiveMask head: %08X mask: \n%s\n%s", debug, headStepId, printBitPosition(64),
         printBits(receiveMask));
-}
-
-bool nbsPendingStepsLatestStepId(const NbsPendingSteps* self, StepId* id)
-{
-    if (self->debugCount == 0) {
-        *id = NIMBLE_STEP_MAX;
-        return false;
-    }
-
-    *id = self->expectingWriteId - 1;
-
-    return true;
 }
 
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug)
