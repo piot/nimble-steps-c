@@ -51,6 +51,7 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
 void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount);
 
 void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, struct ImprintAllocatorWithFree* allocatorWithFree);
+int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self);
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId);
 void nbsPendingStepsSerializeIn(NbsPendingSteps* self, struct FldInStream* stream);
 int nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self);

@@ -6,6 +6,7 @@
 #define NIMBLE_SERVER_STEPS_H
 
 #include <discoid/circular_buffer.h>
+#include <stdbool.h>
 
 typedef uint32_t StepId;
 
@@ -38,6 +39,7 @@ void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t max
 void nbsStepsDestroy(NbsSteps* self);
 void nbsStepsReInit(NbsSteps* self, StepId initialId);
 void nbsStepsReset(NbsSteps* self);
+bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id);
 size_t nbsStepsCount(const NbsSteps* self);
 int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget);
 int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t stepSize);

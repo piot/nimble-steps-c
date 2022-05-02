@@ -5,6 +5,7 @@
 #include <clog/clog.h>
 #include <flood/in_stream.h>
 #include <nimble-steps/steps.h>
+#include <stdbool.h>
 #include <tiny-libc/tiny_libc.h>
 
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
@@ -280,6 +281,18 @@ int nbsStepsPeek(NbsSteps* self, StepId* stepId)
     *stepId = self->expectedReadId;
 
     return 0;
+}
+
+bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id)
+{
+    if (self->stepsCount == 0) {
+        *id = NIMBLE_STEP_MAX;
+        return false;
+    }
+
+    *id = self->expectedWriteId - 1;
+
+    return true;
 }
 
 void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)

@@ -1,6 +1,7 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Peter Bjorklund. All rights reserved.
- *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *  Licensed under the MIT License. See LICENSE in the project root for license
+ *information.
  *--------------------------------------------------------------------------------------------*/
 #include <clog/clog.h>
 #include <imprint/allocator.h>
@@ -9,21 +10,23 @@
 
 static void nbsPendingStepDebugOutput(const NbsPendingStep* self, int index, const char* name)
 {
-    // CLOG_INFO("%d: %08X %s (octet count:%zu)", index, self->idForDebug, name, self->payloadLength);
+    // CLOG_INFO("%d: %08X %s (octet count:%zu)", index, self->idForDebug, name,
+    // self->payloadLength);
 }
 
-void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug, struct ImprintAllocatorWithFree* allocatorWithFree)
+void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug,
+    struct ImprintAllocatorWithFree* allocatorWithFree)
 {
     self->idForDebug = idForDebug;
     self->payloadLength = payloadLength;
     if (payloadLength > 0) {
-        self->payload = IMPRINT_ALLOC((ImprintAllocator *)allocatorWithFree, payloadLength, "nbsPendingStepInit");
+        self->payload = IMPRINT_ALLOC((ImprintAllocator*)allocatorWithFree, payloadLength, "nbsPendingStepInit");
     } else {
         self->payload = 0;
     }
     self->isInUse = 1;
     self->allocatorWithFree = allocatorWithFree;
-    tc_memcpy_octets((uint8_t*) self->payload, payload, payloadLength);
+    tc_memcpy_octets((uint8_t*)self->payload, payload, payloadLength);
 }
 
 void nbsPendingStepDestroy(NbsPendingStep* self)
@@ -34,7 +37,6 @@ void nbsPendingStepDestroy(NbsPendingStep* self)
     self->idForDebug = NIMBLE_STEP_MAX;
 }
 
-
 void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAllocatorWithFree* allocatorWithFree)
 {
     self->debugCount = 0;
@@ -42,8 +44,10 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAl
     self->writeIndex = 0;
     self->readId = lateJoinStepId;
     self->expectingWriteId = lateJoinStepId;
-    self->receiveMask = NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED; // If we don't mark everything as received, we
-                                                                        // will get resent old steps
+    self->receiveMask = NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED; // If we don't mark
+        // everything as received,
+        // we will get resent old
+        // steps
     self->allocatorWithFree = allocatorWithFree;
     tc_mem_clear_type_n(self->steps, NIMBLE_STEPS_PENDING_WINDOW_SIZE);
 }
@@ -53,15 +57,11 @@ void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId)
     nbsPendingStepsInit(self, lateJoinStepId, self->allocatorWithFree);
 }
 
-
-int nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self)
-{
-    return (self->steps[self->readIndex].payload != 0);
-}
+int nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self) { return (self->steps[self->readIndex].payload != 0); }
 
 int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
 {
-    if (tc_modulo((self->readId - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE) != (int) id) {
+    if (tc_modulo((self->readId - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE) != (int)id) {
         return -2;
     }
     int lastReadIndex = tc_modulo((self->readIndex - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE);
@@ -72,23 +72,51 @@ int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
 
 int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_t* outLength, StepId* outId)
 {
-    if (self->debugCount > 0) {
-        NbsPendingStep* item = &self->steps[self->readIndex];
-        if (item->isInUse) {
-            // nbsPendingStepDebugOutput(item, self->readIndex,  "read");
-            self->readIndex = ++self->readIndex % NIMBLE_STEPS_PENDING_WINDOW_SIZE;
-            self->debugCount--;
-            *outData = item->payload;
-            *outLength = item->payloadLength;
-            *outId = self->readId++;
-            item->isInUse = 0;
-            return 1;
+    if (self->debugCount == 0) {
+        CLOG_WARN("there are no pending steps in the buffer to read")
+        *outLength = 0;
+        *outId = 0;
+        *outData = 0;
+        return 0;
+    }
+
+    NbsPendingStep* item = &self->steps[self->readIndex];
+    if (!item->isInUse) {
+        *outLength = 0;
+        *outId = 0;
+        *outData = 0;
+        return 0;
+    }
+
+    // nbsPendingStepDebugOutput(item, self->readIndex,  "read");
+    self->readIndex = ++self->readIndex % NIMBLE_STEPS_PENDING_WINDOW_SIZE;
+    self->debugCount--;
+    *outData = item->payload;
+    *outLength = item->payloadLength;
+    *outId = self->readId++;
+    item->isInUse = 0;
+    return 1;
+}
+
+int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
+{
+    const uint8_t* data;
+    size_t length;
+    StepId outId;
+
+    while (true) {
+        int count = nbsPendingStepsTryRead(self, &data, &length, &outId);
+
+        if (count == 0) {
+            return 0;
+        }
+
+        CLOG_OUTPUT_STDERR("writing authoritative %04X of size:%zu", outId, length)
+        int result = nbsStepsWrite(target, outId, data, length);
+        if (result < 0) {
+            return result;
         }
     }
-    *outLength = 0;
-    *outId = 0;
-    *outData = 0;
-    return 0;
 }
 
 uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
@@ -97,8 +125,8 @@ uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
     return self->receiveMask;
 }
 
-int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxRangeCount,
-                          size_t stepCountMax)
+int nbsPendingStepsRanges(
+    StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxRangeCount, size_t stepCountMax)
 {
     size_t index = 0;
     int isInsideRange = 0;
@@ -205,7 +233,7 @@ static const char* printBits(uint64_t bits)
 void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug)
 {
     CLOG_INFO("'%s' pending steps receiveMask head: %08X mask: \n%s\n%s", debug, headStepId, printBitPosition(64),
-              printBits(receiveMask));
+        printBits(receiveMask));
 }
 
 bool nbsPendingStepsLatestStepId(const NbsPendingSteps* self, StepId* id)
@@ -220,7 +248,6 @@ bool nbsPendingStepsLatestStepId(const NbsPendingSteps* self, StepId* id)
     return true;
 }
 
-
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug)
 {
     nbsPendingStepsDebugReceiveMaskExt(self->expectingWriteId, self->receiveMask, debug);
@@ -229,7 +256,8 @@ void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* de
 static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)
 {
     if (stepId < self->readId) {
-        // CLOG_DEBUG("we have already dealt with this id %08X %08X", stepId, self->tailId);
+        // CLOG_DEBUG("we have already dealt with this id %08X %08X", stepId,
+        // self->tailId);
         return -2;
     }
     int delta = stepId - self->readId;
@@ -241,8 +269,9 @@ static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)
 
 void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, int flags)
 {
-    // CLOG_INFO("pending steps '%s' count:%zu head: %08X mask: \n%s\n%s", debug, self->debugCount,
-    // self->expectingWriteId, printBitPosition(64), printBits(self->receiveMask) );
+    // CLOG_INFO("pending steps '%s' count:%zu head: %08X mask: \n%s\n%s", debug,
+    // self->debugCount, self->expectingWriteId, printBitPosition(64),
+    // printBits(self->receiveMask) );
     for (size_t i = 0; i < NIMBLE_STEPS_PENDING_WINDOW_SIZE; ++i) {
         const char* prefix = "  ";
         const char* prefix2 = "  ";
@@ -282,7 +311,8 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
         return -2;
     } else {
 
-        // CLOG_VERBOSE("setting %08X (index %d) for the first time", stepId, index);
+        // CLOG_VERBOSE("setting %08X (index %d) for the first time", stepId,
+        // index);
     }
     if (stepId >= self->expectingWriteId) {
         int advanceBits = (stepId - self->expectingWriteId) + 1;
@@ -297,7 +327,7 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
         self->receiveMask |= maskForThisStep;
     }
     if (existingStep->payload) {
-      IMPRINT_FREE(self->allocatorWithFree, (void *)existingStep->payload);
+        IMPRINT_FREE(self->allocatorWithFree, (void*)existingStep->payload);
     }
     nbsPendingStepInit(existingStep, payload, payloadLength, stepId, self->allocatorWithFree);
     self->debugCount++;
