@@ -113,7 +113,7 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
             return 0;
         }
 
-        CLOG_OUTPUT_STDERR("writing authoritative %04X of size:%zu", outId, length)
+        CLOG_VERBOSE("writing authoritative %04X of size:%zu", outId, length)
         int result = nbsStepsWrite(target, outId, data, length);
         if (result < 0) {
             return result;
