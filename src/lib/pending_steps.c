@@ -250,7 +250,7 @@ void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, 
     for (size_t i = 0; i < NIMBLE_STEPS_PENDING_WINDOW_SIZE; ++i) {
         const char* prefix = "  ";
         const char* prefix2 = "  ";
-        const NbsPendingStep* entry = &self->steps[i];
+        //const NbsPendingStep* entry = &self->steps[i];
         int forceThisLine = 0;
         if (i == self->writeIndex) {
             prefix = "H>";

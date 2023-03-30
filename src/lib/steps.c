@@ -67,11 +67,10 @@ void nbsStepsReset(NbsSteps* self)
     nbsStepsReInit(self, NIMBLE_STEP_MAX);
 }
 
-void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxOctets, StepId initialId)
+void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxOctets)
 {
     tc_mem_clear_type(self);
     discoidBufferInit(&self->stepsData, allocator, maxOctets);
-    nbsStepsReInit(self, initialId);
 }
 
 void nbsStepsDestroy(NbsSteps* self)
@@ -293,7 +292,7 @@ bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id)
 
 void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
 {
-
+#if CLOG_LOG_ENABLED
     uint8_t tempStepBuffer[1024];
     size_t count = self->stepsCount;
     if (count == 0) {
@@ -305,9 +304,10 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
     char extraInfo[1024];
     StepId stepIdToShow = self->expectedReadId;
     for (size_t i = 0; i < count; ++i) {
-        int readCount = nbsStepsReadAtStep(self, stepIdToShow, tempStepBuffer, 1024);
+        CLOG_EXECUTE(int readCount = nbsStepsReadAtStep(self, stepIdToShow, tempStepBuffer, 1024);)
             extraInfo[0] = 0;
         CLOG_INFO("  %zu: %08X (octet count: %d)  %s", i, stepIdToShow, readCount, extraInfo)
         stepIdToShow++;
     }
+#endif
 }
