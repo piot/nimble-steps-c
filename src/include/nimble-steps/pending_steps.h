@@ -34,7 +34,6 @@ typedef struct NbsPendingRange {
 void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug, struct ImprintAllocatorWithFree* allocator);
 void nbsPendingStepDestroy(NbsPendingStep* self);
 
-
 typedef struct NbsPendingSteps {
     NbsPendingStep steps[NIMBLE_STEPS_PENDING_WINDOW_SIZE];
     int writeIndex;

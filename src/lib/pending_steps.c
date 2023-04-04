@@ -6,7 +6,6 @@
 #include <clog/clog.h>
 #include <imprint/allocator.h>
 #include <nimble-steps/pending_steps.h>
-#include <tiny-libc/tiny_libc.h>
 
 static void nbsPendingStepDebugOutput(const NbsPendingStep* self, int index, const char* name)
 {
