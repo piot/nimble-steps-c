@@ -8,9 +8,9 @@
 #define NIMBLE_STEPS_PENDING_WINDOW_SIZE (64)
 #include <nimble-steps/steps.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 struct FldInStream;
 struct ImprintAllocator;
@@ -31,7 +31,8 @@ typedef struct NbsPendingRange {
 
 #define NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED (UINT64_MAX)
 
-void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug, struct ImprintAllocatorWithFree* allocator);
+void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug,
+                        struct ImprintAllocatorWithFree* allocator);
 void nbsPendingStepDestroy(NbsPendingStep* self);
 
 typedef struct NbsPendingSteps {
@@ -49,7 +50,8 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
                           size_t stepMaxCount);
 void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount);
 
-void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, struct ImprintAllocatorWithFree* allocatorWithFree);
+void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId,
+                         struct ImprintAllocatorWithFree* allocatorWithFree);
 int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self);
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId);
 void nbsPendingStepsSerializeIn(NbsPendingSteps* self, struct FldInStream* stream);

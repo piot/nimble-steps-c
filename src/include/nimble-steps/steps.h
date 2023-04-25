@@ -43,12 +43,13 @@ bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id);
 size_t nbsStepsCount(const NbsSteps* self);
 int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget);
 int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t stepSize);
-int nbsStepsPeek(NbsSteps* self, StepId* stepId);
+bool nbsStepsPeek(NbsSteps* self, StepId* stepId);
 int nbsStepsDiscard(NbsSteps* self, StepId* stepId);
 int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo);
-int nbsStepsReadAtStep(const NbsSteps* self, StepId stepId, uint8_t* data, size_t maxTarget);
 int nbsStepsDiscardIncluding(NbsSteps* self, StepId stepIdToDiscardTo);
 int nbsStepsAllowedToAdd(const NbsSteps* self);
+int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId);
+int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size_t maxTarget);
 void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags);
 
-#endif // NIMBLE_SERVER_STEPS_H
+#endif

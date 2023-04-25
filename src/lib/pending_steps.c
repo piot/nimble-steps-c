@@ -14,18 +14,18 @@ static void nbsPendingStepDebugOutput(const NbsPendingStep* self, int index, con
 }
 
 void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug,
-    struct ImprintAllocatorWithFree* allocatorWithFree)
+                        struct ImprintAllocatorWithFree* allocatorWithFree)
 {
     self->idForDebug = idForDebug;
     self->payloadLength = payloadLength;
     if (payloadLength > 0) {
-        self->payload = IMPRINT_ALLOC((ImprintAllocator*)allocatorWithFree, payloadLength, "nbsPendingStepInit");
+        self->payload = IMPRINT_ALLOC((ImprintAllocator*) allocatorWithFree, payloadLength, "nbsPendingStepInit");
     } else {
         self->payload = 0;
     }
     self->isInUse = 1;
     self->allocatorWithFree = allocatorWithFree;
-    tc_memcpy_octets((uint8_t*)self->payload, payload, payloadLength);
+    tc_memcpy_octets((uint8_t*) self->payload, payload, payloadLength);
 }
 
 void nbsPendingStepDestroy(NbsPendingStep* self)
@@ -44,9 +44,9 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAl
     self->readId = lateJoinStepId;
     self->expectingWriteId = lateJoinStepId;
     self->receiveMask = NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED; // If we don't mark
-        // everything as received,
-        // we will get resent old
-        // steps
+                                                                        // everything as received,
+                                                                        // we will get resent old
+                                                                        // steps
     self->allocatorWithFree = allocatorWithFree;
     tc_mem_clear_type_n(self->steps, NIMBLE_STEPS_PENDING_WINDOW_SIZE);
 }
@@ -63,7 +63,7 @@ bool nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self)
 
 int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
 {
-    if (tc_modulo((self->readId - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE) != (int)id) {
+    if (tc_modulo((self->readId - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE) != (int) id) {
         return -2;
     }
     int lastReadIndex = tc_modulo((self->readIndex - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE);
@@ -126,8 +126,8 @@ uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
     return self->receiveMask;
 }
 
-int nbsPendingStepsRanges(
-    StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxRangeCount, size_t stepCountMax)
+int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxRangeCount,
+                          size_t stepCountMax)
 {
     size_t index = 0;
     int isInsideRange = 0;
@@ -219,7 +219,7 @@ static const char* printBits(uint64_t bits)
 void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug)
 {
     CLOG_INFO("'%s' pending steps receiveMask head: %08X mask: \n%s\n%s", debug, headStepId, printBitPosition(64),
-        printBits(receiveMask));
+              printBits(receiveMask));
 }
 
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug)
@@ -249,7 +249,7 @@ void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, 
     for (size_t i = 0; i < NIMBLE_STEPS_PENDING_WINDOW_SIZE; ++i) {
         const char* prefix = "  ";
         const char* prefix2 = "  ";
-        //const NbsPendingStep* entry = &self->steps[i];
+        // const NbsPendingStep* entry = &self->steps[i];
         int forceThisLine = 0;
         if (i == self->writeIndex) {
             prefix = "H>";
@@ -301,7 +301,7 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
         self->receiveMask |= maskForThisStep;
     }
     if (existingStep->payload) {
-        IMPRINT_FREE(self->allocatorWithFree, (void*)existingStep->payload);
+        IMPRINT_FREE(self->allocatorWithFree, (void*) existingStep->payload);
     }
     nbsPendingStepInit(existingStep, payload, payloadLength, stepId, self->allocatorWithFree);
     self->debugCount++;

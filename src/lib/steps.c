@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Peter Bjorklund. All rights reserved.
- *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *  Licensed under the MIT License. See LICENSE in the project root for license
+ *information.
  *--------------------------------------------------------------------------------------------*/
 #include <clog/clog.h>
 #include <flood/in_stream.h>
 #include <nimble-steps/steps.h>
 #include <stdbool.h>
-#include <tiny-libc/tiny_libc.h>
 
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
 {
@@ -29,8 +29,8 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
     for (size_t i = 0; i < participantCountInStep; ++i) {
         uint8_t participantId;
         fldInStreamReadUInt8(&stepInStream, &participantId);
-        if (participantId > 4) {
-            CLOG_SOFT_ERROR("combined step: participantId is too high");
+        if (participantId > 8) {
+            CLOG_SOFT_ERROR("combined step: participantId is too high %u", participantId);
             return -3;
         }
 
@@ -61,7 +61,6 @@ void nbsStepsReInit(NbsSteps* self, StepId initialId)
     discoidBufferReset(&self->stepsData);
 }
 
-
 void nbsStepsReset(NbsSteps* self)
 {
     nbsStepsReInit(self, NIMBLE_STEP_MAX);
@@ -83,9 +82,8 @@ int nbsStepsAllowedToAdd(const NbsSteps* self)
     return self->stepsCount < 24;
 }
 
-
 #define NBS_ADVANCE(index) index = (index + 1) % NBS_WINDOW_SIZE
-//#define NBS_RETREAT(index) index = tc_modulo((index - 1),  NBS_WINDOW_SIZE)
+// #define NBS_RETREAT(index) index = tc_modulo((index - 1),  NBS_WINDOW_SIZE)
 
 static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
 {
@@ -137,33 +135,33 @@ int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget
     return nbsStepsReadHelper(self, info, data, maxTarget);
 }
 
-int nbsStepsReadAtStep(const NbsSteps* self, StepId stepId, uint8_t* data, size_t maxTarget)
+int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId)
 {
     if (self->stepsCount == 0) {
         CLOG_WARN("read at steps: no steps stored");
         return -2;
     }
 
-    int infoIndexBackward = self->expectedWriteId - stepId;
-    if (infoIndexBackward < 0) {
-        CLOG_WARN("read at steps: this is a stepId in the future %08X %08X", self->expectedWriteId, stepId);
+    for (int i = 0; i < self->stepsCount; ++i) {
+        int infoIndex = tc_modulo(self->infoTailIndex + i, NBS_WINDOW_SIZE);
+        const StepInfo* info = &self->infos[infoIndex];
+        if (info->stepId == stepId) {
+            return infoIndex;
+        }
+    }
+    return -1;
+}
+
+int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size_t maxTarget)
+{
+    if (infoIndex < 0) {
+        return -2;
+    }
+    if (infoIndex >= NBS_WINDOW_SIZE) {
         return -3;
     }
 
-    if ((size_t) infoIndexBackward > self->stepsCount) {
-        CLOG_WARN("read at steps: you want to read steps (for serialization) that happened too long ago. "
-                  "ExpectedWrite: %08X first:%08X firstA:%08X count:%zu,  stepID: %08X index:%d",
-                  self->expectedWriteId, (StepId)(self->expectedWriteId - self->stepsCount), self->expectedReadId,
-                  self->stepsCount, stepId, infoIndexBackward);
-        return -4;
-    }
-
-    int infoIndex = tc_modulo((self->infoHeadIndex - infoIndexBackward), NBS_WINDOW_SIZE);
-
     const StepInfo* info = &self->infos[infoIndex];
-    // CLOG_DEBUG("readAtStep: fetching info at index %d. Found step %08X octet count %d", infoIndex, info->stepId,
-    // info->octetCount);
-
     if (info->octetCount > maxTarget) {
         CLOG_WARN("read at steps: target buffer is too small %zu %zu", info->octetCount, maxTarget);
         return -5;
@@ -254,8 +252,9 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     info->stepId = stepId;
     info->octetCount = stepSize;
     info->positionInBuffer = self->stepsData.writeIndex;
-    CLOG_INFO("nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu octetCount: %zu stored steps: %zu", stepId, self->infoHeadIndex, info->positionInBuffer,
-     info->octetCount, self->stepsCount+1)
+    CLOG_VERBOSE("nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu "
+                 "octetCount: %zu stored steps: %zu",
+                 stepId, self->infoHeadIndex, info->positionInBuffer, info->octetCount, self->stepsCount + 1)
     NBS_ADVANCE(self->infoHeadIndex);
 
     int errorCode;
@@ -271,11 +270,16 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     return stepSize;
 }
 
-int nbsStepsPeek(NbsSteps* self, StepId* stepId)
+bool nbsStepsPeek(NbsSteps* self, StepId* stepId)
 {
+    if (self->stepsCount == 0) {
+        *stepId = NIMBLE_STEP_MAX;
+        return false;
+    }
+
     *stepId = self->expectedReadId;
 
-    return 0;
+    return true;
 }
 
 bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id)
@@ -304,8 +308,9 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
     char extraInfo[1024];
     StepId stepIdToShow = self->expectedReadId;
     for (size_t i = 0; i < count; ++i) {
-        CLOG_EXECUTE(int readCount = nbsStepsReadAtStep(self, stepIdToShow, tempStepBuffer, 1024);)
-            extraInfo[0] = 0;
+        CLOG_EXECUTE(int indexToShow = nbsStepsGetIndexForStep(self, stepIdToShow);)
+        CLOG_EXECUTE(int readCount = nbsStepsReadAtIndex(self, indexToShow, tempStepBuffer, 1024);)
+        extraInfo[0] = 0;
         CLOG_INFO("  %zu: %08X (octet count: %d)  %s", i, stepIdToShow, readCount, extraInfo)
         stepIdToShow++;
     }
