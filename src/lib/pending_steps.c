@@ -16,6 +16,13 @@ static void nbsPendingStepDebugOutput(const NbsPendingStep* self, int index, con
 void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug,
                         struct ImprintAllocatorWithFree* allocatorWithFree)
 {
+    int code = nbsStepsVerifyStep(payload, payloadLength);
+    if (code < 0) {
+        CLOG_ERROR("nbsPendingStepInit: not a correctly serialized step. can not read")
+        return;
+    }
+
+
     self->idForDebug = idForDebug;
     self->payloadLength = payloadLength;
     if (payloadLength > 0) {
@@ -99,6 +106,14 @@ int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_
     *outLength = item->payloadLength;
     *outId = self->readId++;
     item->isInUse = 0;
+
+
+    int code = nbsStepsVerifyStep(item->payload, item->payloadLength);
+    if (code < 0) {
+        CLOG_C_ERROR(&self->log, "nbsPendingStepsTryRead: not a correctly serialized step. can not read")
+        return code;
+    }
+
     return 1;
 }
 
@@ -114,7 +129,13 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
             return 0;
         }
 
-        CLOG_C_VERBOSE(&self->log, "writing authoritative %04X of size:%zu", outId, length)
+        int foundParticipantCount = nbsStepsVerifyStep(data, length);
+        if (foundParticipantCount < 0) {
+            CLOG_C_ERROR(&self->log, "nbsPendingStepsCopy: could not verify step of size:%zu", length)
+            return foundParticipantCount;
+        }
+
+        CLOG_C_VERBOSE(&self->log, "writing authoritative %08X of size:%zu", outId, length)
         int result = nbsStepsWrite(target, outId, data, length);
         if (result < 0) {
             return result;

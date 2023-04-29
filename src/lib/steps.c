@@ -22,7 +22,7 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
     fldInStreamReadUInt8(&stepInStream, &participantCountInStep);
 
     if (participantCountInStep > 64) {
-        CLOG_SOFT_ERROR("combined step: participant count is too high");
+        CLOG_SOFT_ERROR("combined step: participant count is too high %d", participantCountInStep);
         return -4;
     }
 
@@ -314,7 +314,7 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
     if (count == 0) {
         CLOG_C_INFO(&self->log, "=== nimble steps '%s' empty", debug)
     } else {
-        CLOG_C_INFO(&self->log, "=== nimble steps '%s' from %u to %u (count:%zu)", debug, self->expectedReadId,
+        CLOG_C_INFO(&self->log, "=== nimble steps '%s' from %08X to %08X (count:%zu)", debug, self->expectedReadId,
                     self->expectedWriteId - 1, count)
     }
     char extraInfo[1024];
