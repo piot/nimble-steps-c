@@ -36,8 +36,10 @@ void nbsPendingStepDestroy(NbsPendingStep* self)
     self->idForDebug = NIMBLE_STEP_MAX;
 }
 
-void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAllocatorWithFree* allocatorWithFree)
+void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAllocatorWithFree* allocatorWithFree,
+                         Clog log)
 {
+    self->log = log;
     self->debugCount = 0;
     self->readIndex = 0;
     self->writeIndex = 0;
@@ -53,7 +55,7 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAl
 
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId)
 {
-    nbsPendingStepsInit(self, lateJoinStepId, self->allocatorWithFree);
+    nbsPendingStepsInit(self, lateJoinStepId, self->allocatorWithFree, self->log);
 }
 
 bool nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self)
@@ -75,7 +77,7 @@ int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
 int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_t* outLength, StepId* outId)
 {
     if (self->debugCount == 0) {
-        CLOG_WARN("there are no pending steps in the buffer to read")
+        CLOG_C_WARN(&self->log, "there are no pending steps in the buffer to read")
         *outLength = 0;
         *outId = 0;
         *outData = 0;
@@ -106,18 +108,20 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
     size_t length;
     StepId outId;
 
-    while (true) {
+    while (nbsStepsAllowedToAdd(target)) {
         int count = nbsPendingStepsTryRead(self, &data, &length, &outId);
         if (count == 0) {
             return 0;
         }
 
-        CLOG_VERBOSE("writing authoritative %04X of size:%zu", outId, length)
+        CLOG_C_VERBOSE(&self->log, "writing authoritative %04X of size:%zu", outId, length)
         int result = nbsStepsWrite(target, outId, data, length);
         if (result < 0) {
             return result;
         }
     }
+
+    return 0;
 }
 
 uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
@@ -164,11 +168,11 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
     return index;
 }
 
-void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount)
+void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount, Clog log)
 {
-    CLOG_INFO("--- ranges '%s' number of ranges:%zu", debug, maxCount);
+    CLOG_C_INFO(&log, "--- ranges '%s' number of ranges:%zu", debug, maxCount);
     for (size_t i = 0; i < maxCount; ++i) {
-        CLOG_INFO("%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count);
+        CLOG_C_INFO(&log, "%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count);
     }
 }
 
@@ -216,15 +220,15 @@ static const char* printBits(uint64_t bits)
     return buf;
 }
 
-void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug)
+void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug, Clog log)
 {
-    CLOG_INFO("'%s' pending steps receiveMask head: %08X mask: \n%s\n%s", debug, headStepId, printBitPosition(64),
-              printBits(receiveMask));
+    CLOG_C_INFO(&log, "'%s' pending steps receiveMask head: %08X mask: \n%s\n%s", debug, headStepId,
+                printBitPosition(64), printBits(receiveMask));
 }
 
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug)
 {
-    nbsPendingStepsDebugReceiveMaskExt(self->expectingWriteId, self->receiveMask, debug);
+    nbsPendingStepsDebugReceiveMaskExt(self->expectingWriteId, self->receiveMask, debug, self->log);
 }
 
 static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)

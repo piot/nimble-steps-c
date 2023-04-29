@@ -13,4 +13,4 @@ typedef struct NimbleStep {
     size_t octetCount;
 } NimbleStep;
 
-#endif // NIMBLE_SERVER_STEP_H
+#endif

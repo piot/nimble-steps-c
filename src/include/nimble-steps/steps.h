@@ -5,6 +5,7 @@
 #ifndef NIMBLE_SERVER_STEPS_H
 #define NIMBLE_SERVER_STEPS_H
 
+#include <clog/clog.h>
 #include <discoid/circular_buffer.h>
 #include <stdbool.h>
 
@@ -31,11 +32,12 @@ typedef struct NbsSteps {
     StepInfo infos[NBS_WINDOW_SIZE];
     size_t infoHeadIndex;
     size_t infoTailIndex;
+    Clog log;
 } NbsSteps;
 
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount);
 size_t nbsStepsDropped(const NbsSteps* self, StepId firstReadStepId);
-void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxTarget);
+void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxTarget, Clog log);
 void nbsStepsDestroy(NbsSteps* self);
 void nbsStepsReInit(NbsSteps* self, StepId initialId);
 void nbsStepsReset(NbsSteps* self);
@@ -47,7 +49,7 @@ bool nbsStepsPeek(NbsSteps* self, StepId* stepId);
 int nbsStepsDiscard(NbsSteps* self, StepId* stepId);
 int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo);
 int nbsStepsDiscardIncluding(NbsSteps* self, StepId stepIdToDiscardTo);
-int nbsStepsAllowedToAdd(const NbsSteps* self);
+bool nbsStepsAllowedToAdd(const NbsSteps* self);
 int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId);
 int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size_t maxTarget);
 void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags);

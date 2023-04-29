@@ -66,10 +66,19 @@ void nbsStepsReset(NbsSteps* self)
     nbsStepsReInit(self, NIMBLE_STEP_MAX);
 }
 
-void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxOctets)
+void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxOctetSizeForCombinedStep, Clog log)
 {
     tc_mem_clear_type(self);
-    discoidBufferInit(&self->stepsData, allocator, maxOctets);
+    self->log = log;
+    const size_t maxCombinedOctetSizeAllowed = 256;
+    if (maxOctetSizeForCombinedStep > maxCombinedOctetSizeAllowed) {
+        CLOG_C_ERROR(&self->log,
+                     "nbsStepsInit: only supports combined input sizes up to %zu octets, but encountered %zu",
+                     maxCombinedOctetSizeAllowed, maxOctetSizeForCombinedStep)
+    }
+
+    size_t bufferOctetSize = maxOctetSizeForCombinedStep * (NBS_WINDOW_SIZE / 2);
+    discoidBufferInit(&self->stepsData, allocator, bufferOctetSize);
 }
 
 void nbsStepsDestroy(NbsSteps* self)
@@ -77,7 +86,7 @@ void nbsStepsDestroy(NbsSteps* self)
     discoidBufferDestroy(&self->stepsData);
 }
 
-int nbsStepsAllowedToAdd(const NbsSteps* self)
+bool nbsStepsAllowedToAdd(const NbsSteps* self)
 {
     return self->stepsCount < 24;
 }
@@ -91,7 +100,7 @@ static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
     NBS_ADVANCE(self->infoTailIndex);
 
     if (info->stepId != self->expectedReadId) {
-        CLOG_ERROR("expected to read %d but encountered %d", self->expectedReadId, info->stepId);
+        CLOG_C_ERROR(&self->log, "expected to read %d but encountered %d", self->expectedReadId, info->stepId);
         *outInfo = 0;
         return -3;
     }
@@ -105,7 +114,7 @@ static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
 static int nbsStepsReadHelper(NbsSteps* self, const StepInfo* info, uint8_t* data, size_t maxTarget)
 {
     if (info->octetCount > maxTarget) {
-        CLOG_ERROR("wrong octet count in steps data");
+        CLOG_C_ERROR(&self->log, "wrong octet count in steps data");
         return -3;
     }
 
@@ -138,7 +147,7 @@ int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget
 int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId)
 {
     if (self->stepsCount == 0) {
-        CLOG_WARN("read at steps: no steps stored");
+        CLOG_C_WARN(&self->log, "read at steps: no steps stored")
         return -2;
     }
 
@@ -163,7 +172,7 @@ int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size
 
     const StepInfo* info = &self->infos[infoIndex];
     if (info->octetCount > maxTarget) {
-        CLOG_WARN("read at steps: target buffer is too small %zu %zu", info->octetCount, maxTarget);
+        CLOG_C_WARN(&self->log, "read at steps: target buffer is too small %zu %zu", info->octetCount, maxTarget)
         return -5;
     }
 
@@ -171,7 +180,7 @@ int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size
 
     int verifyError = nbsStepsVerifyStep(data, info->octetCount);
     if (verifyError < 0) {
-        CLOG_SOFT_ERROR("wrong step stored in discoid buffer");
+        CLOG_C_SOFT_ERROR(&self->log, "wrong step stored in discoid buffer");
         return verifyError;
     }
 
@@ -184,7 +193,7 @@ int nbsStepsDiscard(struct NbsSteps* self, StepId* stepId)
 
     int errorCode = advanceInfoTail(self, &info);
     if (errorCode < 0) {
-        CLOG_SOFT_ERROR("couldn't advance tail")
+        CLOG_C_SOFT_ERROR(&self->log, "couldn't advance tail")
         return errorCode;
     }
 
@@ -199,7 +208,8 @@ int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo)
 
     if (stepIdToDiscardTo <= self->expectedReadId) {
         if (stepIdToDiscardTo < self->expectedReadId) {
-            CLOG_WARN("this happened a while back: %08X vs our start %08X", stepIdToDiscardTo, self->expectedReadId);
+            CLOG_C_WARN(&self->log, "this happened a while back: %08X vs our start %08X", stepIdToDiscardTo,
+                        self->expectedReadId);
         }
         return 0;
     }
@@ -226,23 +236,24 @@ int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo)
 int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t stepSize)
 {
     if (stepSize > 1024) {
-        CLOG_ERROR("wrong stuff in steps data")
+        CLOG_C_ERROR(&self->log, "wrong stuff in steps data")
         return -3;
     }
 
     if (self->stepsCount == NBS_WINDOW_SIZE) {
-        CLOG_ERROR("buffer is full. Do not know how to handle it. %zu out of %d", self->stepsCount, NBS_WINDOW_SIZE)
+        CLOG_C_ERROR(&self->log, "buffer is full. Do not know how to handle it. %zu out of %d", self->stepsCount,
+                     NBS_WINDOW_SIZE)
         return -6;
     }
 
     if (self->expectedWriteId != stepId) {
-        CLOG_SOFT_ERROR("expected write %d but got %d", self->expectedWriteId, stepId)
+        CLOG_C_SOFT_ERROR(&self->log, "expected write %d but got %d", self->expectedWriteId, stepId)
         return -4;
     }
 
     int code = nbsStepsVerifyStep(data, stepSize);
     if (code < 0) {
-        CLOG_ERROR("not a correctly serialized step. can not add")
+        CLOG_C_ERROR(&self->log, "not a correctly serialized step. can not add")
         return code;
     }
 
@@ -252,16 +263,17 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     info->stepId = stepId;
     info->octetCount = stepSize;
     info->positionInBuffer = self->stepsData.writeIndex;
-    CLOG_VERBOSE("nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu "
-                 "octetCount: %zu stored steps: %zu",
-                 stepId, self->infoHeadIndex, info->positionInBuffer, info->octetCount, self->stepsCount + 1)
+    CLOG_C_VERBOSE(&self->log,
+                   "nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu "
+                   "octetCount: %zu stored steps: %zu",
+                   stepId, self->infoHeadIndex, info->positionInBuffer, info->octetCount, self->stepsCount + 1)
     NBS_ADVANCE(self->infoHeadIndex);
 
     int errorCode;
 
     errorCode = discoidBufferWrite(&self->stepsData, data, stepSize);
     if (errorCode < 0) {
-        CLOG_SOFT_ERROR("couldn't write to buffer %d", errorCode)
+        CLOG_C_SOFT_ERROR(&self->log, "couldn't write to buffer %d", errorCode)
         return errorCode;
     }
 
@@ -300,10 +312,10 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
     uint8_t tempStepBuffer[1024];
     size_t count = self->stepsCount;
     if (count == 0) {
-        CLOG_INFO("=== nimble steps '%s' empty", debug)
+        CLOG_C_INFO(&self->log, "=== nimble steps '%s' empty", debug)
     } else {
-        CLOG_INFO("=== nimble steps '%s' from %u to %u (count:%zu)", debug, self->expectedReadId,
-                  self->expectedWriteId - 1, count)
+        CLOG_C_INFO(&self->log, "=== nimble steps '%s' from %u to %u (count:%zu)", debug, self->expectedReadId,
+                    self->expectedWriteId - 1, count)
     }
     char extraInfo[1024];
     StepId stepIdToShow = self->expectedReadId;
@@ -311,7 +323,7 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
         CLOG_EXECUTE(int indexToShow = nbsStepsGetIndexForStep(self, stepIdToShow);)
         CLOG_EXECUTE(int readCount = nbsStepsReadAtIndex(self, indexToShow, tempStepBuffer, 1024);)
         extraInfo[0] = 0;
-        CLOG_INFO("  %zu: %08X (octet count: %d)  %s", i, stepIdToShow, readCount, extraInfo)
+        CLOG_C_INFO(&self->log, "  %zu: %08X (octet count: %d)  %s", i, stepIdToShow, readCount, extraInfo)
         stepIdToShow++;
     }
 #endif

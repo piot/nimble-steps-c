@@ -44,14 +44,15 @@ typedef struct NbsPendingSteps {
     StepId readId;
     uint64_t receiveMask;
     struct ImprintAllocatorWithFree* allocatorWithFree;
+    Clog log;
 } NbsPendingSteps;
 
 int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxCount,
                           size_t stepMaxCount);
-void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount);
+void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount, Clog log);
 
 void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId,
-                         struct ImprintAllocatorWithFree* allocatorWithFree);
+                         struct ImprintAllocatorWithFree* allocatorWithFree, Clog log);
 int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self);
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId);
 void nbsPendingStepsSerializeIn(NbsPendingSteps* self, struct FldInStream* stream);
@@ -63,6 +64,6 @@ uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
 int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* payload, size_t payloadLength);
 void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, int flags);
 void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug);
-void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug);
+void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug, Clog log);
 
-#endif // NIMBLE_STEPS_EXAMPLE_PENDING_STEPS_H
+#endif
