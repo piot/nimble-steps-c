@@ -124,6 +124,10 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
     StepId outId;
 
     while (nbsStepsAllowedToAdd(target)) {
+        if (self->debugCount == 0) {
+            return 0;
+        }
+
         int count = nbsPendingStepsTryRead(self, &data, &length, &outId);
         if (count == 0) {
             return 0;
@@ -191,9 +195,9 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
 
 void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount, Clog log)
 {
-    CLOG_C_INFO(&log, "--- ranges '%s' number of ranges:%zu", debug, maxCount);
+    CLOG_C_VERBOSE(&log, "--- ranges '%s' number of ranges:%zu", debug, maxCount);
     for (size_t i = 0; i < maxCount; ++i) {
-        CLOG_C_INFO(&log, "%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count);
+        CLOG_C_VERBOSE(&log, "%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count);
     }
 }
 

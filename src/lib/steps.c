@@ -240,7 +240,7 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
         return -3;
     }
 
-    if (self->stepsCount == NBS_WINDOW_SIZE) {
+    if (self->stepsCount == NBS_WINDOW_SIZE/2) {
         CLOG_C_ERROR(&self->log, "buffer is full. Do not know how to handle it. %zu out of %d", self->stepsCount,
                      NBS_WINDOW_SIZE)
         return -6;
@@ -312,9 +312,9 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
     uint8_t tempStepBuffer[1024];
     size_t count = self->stepsCount;
     if (count == 0) {
-        CLOG_C_INFO(&self->log, "=== nimble steps '%s' empty", debug)
+        CLOG_C_VERBOSE(&self->log, "=== nimble steps '%s' empty", debug)
     } else {
-        CLOG_C_INFO(&self->log, "=== nimble steps '%s' from %08X to %08X (count:%zu)", debug, self->expectedReadId,
+        CLOG_C_VERBOSE(&self->log, "=== nimble steps '%s' from %08X to %08X (count:%zu)", debug, self->expectedReadId,
                     self->expectedWriteId - 1, count)
     }
     char extraInfo[1024];
@@ -323,7 +323,7 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
         CLOG_EXECUTE(int indexToShow = nbsStepsGetIndexForStep(self, stepIdToShow);)
         CLOG_EXECUTE(int readCount = nbsStepsReadAtIndex(self, indexToShow, tempStepBuffer, 1024);)
         extraInfo[0] = 0;
-        CLOG_C_INFO(&self->log, "  %zu: %08X (octet count: %d)  %s", i, stepIdToShow, readCount, extraInfo)
+        CLOG_C_VERBOSE(&self->log, "  %zu: %08X (octet count: %d)  %s", i, stepIdToShow, readCount, extraInfo)
         stepIdToShow++;
     }
 #endif
