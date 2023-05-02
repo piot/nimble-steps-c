@@ -22,7 +22,6 @@ void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t pay
         return;
     }
 
-
     self->idForDebug = idForDebug;
     self->payloadLength = payloadLength;
     if (payloadLength > 0) {
@@ -107,7 +106,6 @@ int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_
     *outId = self->readId++;
     item->isInUse = 0;
 
-
     int code = nbsStepsVerifyStep(item->payload, item->payloadLength);
     if (code < 0) {
         CLOG_C_ERROR(&self->log, "nbsPendingStepsTryRead: not a correctly serialized step. can not read")
@@ -159,7 +157,7 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
                           size_t stepCountMax)
 {
     size_t index = 0;
-    int isInsideRange = 0;
+    bool isInsideRange = false;
     int rangeIndex;
     size_t stepCountTotal = 0;
     for (int i = 63; i >= 0; --i) {
@@ -171,7 +169,7 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
             StepId id = headId - i;
             ranges[index].startId = id;
             ranges[index].count = 0;
-            isInsideRange = 1;
+            isInsideRange = true;
             rangeIndex = i;
         } else if (bit && isInsideRange) {
             size_t count = rangeIndex - i;
@@ -187,9 +185,10 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
                 return index;
             }
             rangeIndex = -1;
-            isInsideRange = 0;
+            isInsideRange = false;
         }
     }
+
     return index;
 }
 
@@ -326,6 +325,10 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
     } else {
         // It was a previous step
         size_t bitsFromHead = (self->expectingWriteId - stepId) - 1;
+        if (bitsFromHead > 63) {
+            CLOG_C_SOFT_ERROR(&self->log, "Illegal protocol bitsFromHead")
+            return -44;
+        }
         uint64_t maskForThisStep = 1ULL << bitsFromHead;
         self->receiveMask |= maskForThisStep;
     }
