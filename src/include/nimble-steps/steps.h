@@ -49,6 +49,7 @@ bool nbsStepsPeek(NbsSteps* self, StepId* stepId);
 int nbsStepsDiscard(NbsSteps* self, StepId* stepId);
 int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo);
 int nbsStepsDiscardIncluding(NbsSteps* self, StepId stepIdToDiscardTo);
+int nbsStepsDiscardCount(NbsSteps* self, size_t stepCountToDiscard);
 bool nbsStepsAllowedToAdd(const NbsSteps* self);
 int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId);
 int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size_t maxTarget);

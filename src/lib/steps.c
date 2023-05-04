@@ -10,7 +10,7 @@
 
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
 {
-    if (octetCount < 4) {
+    if (octetCount < 3u) {
         CLOG_SOFT_ERROR("combined step is too small");
         return -1;
     }
@@ -36,8 +36,8 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
 
         uint8_t octetCountForStep;
         fldInStreamReadUInt8(&stepInStream, &octetCountForStep);
-        if (octetCountForStep < 1) {
-            CLOG_SOFT_ERROR("combined step: an individual step must be at least one octet");
+        if (octetCountForStep > 128) {
+            CLOG_SOFT_ERROR("combined step: individual step size is suspicious %d", octetCountForStep);
             return -6;
         }
 
@@ -231,6 +231,24 @@ int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo)
     }
 
     return discardedCount;
+}
+
+int nbsStepsDiscardCount(NbsSteps* self, size_t stepCountToDiscard)
+{
+    if (self->stepsCount < stepCountToDiscard) {
+        CLOG_C_ERROR(&self->log, "too many to discard")
+        return -99;
+    }
+
+    for (size_t i=0; i<stepCountToDiscard; ++i) {
+        StepId discardedStepId;
+        int errorCode = nbsStepsDiscard(self, &discardedStepId);
+        if (errorCode < 0) {
+            return errorCode;
+        }
+    }
+
+    return 0;
 }
 
 int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t stepSize)
