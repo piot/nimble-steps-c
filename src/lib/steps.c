@@ -8,6 +8,10 @@
 #include <nimble-steps/steps.h>
 #include <stdbool.h>
 
+/// Tries to do a sanity check of a payload to make sure it conforms to the format for a combined step
+/// @param payload
+/// @param octetCount
+/// @return
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
 {
     if (octetCount < 3u) {
@@ -51,6 +55,9 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
     return participantCountInStep;
 }
 
+/// Clears the buffer and sets a new starting TickId
+/// @param self
+/// @param initialId starting tickId for the buffer. The next write must be exactly for this TickId.
 void nbsStepsReInit(NbsSteps* self, StepId initialId)
 {
     self->stepsCount = 0;
@@ -61,11 +68,21 @@ void nbsStepsReInit(NbsSteps* self, StepId initialId)
     discoidBufferReset(&self->stepsData);
 }
 
+/// Puts the buffer in a state where it tries to free as much resources as possible
+/// Think of it as just releasing the resources without specifying a new StepId
+/// @param self
 void nbsStepsReset(NbsSteps* self)
 {
     nbsStepsReInit(self, NIMBLE_STEP_MAX);
 }
 
+/// Initializes the steps buffer and allocates all memory needed
+/// All steps written to the buffer must be exactly in order without any gaps
+/// @note you must call nbsStepsReInit directly after a call to this function
+/// @param self
+/// @param allocator
+/// @param maxOctetSizeForCombinedStep
+/// @param log
 void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxOctetSizeForCombinedStep, Clog log)
 {
     tc_mem_clear_type(self);
@@ -81,11 +98,9 @@ void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t max
     discoidBufferInit(&self->stepsData, allocator, bufferOctetSize);
 }
 
-void nbsStepsDestroy(NbsSteps* self)
-{
-    discoidBufferDestroy(&self->stepsData);
-}
-
+/// Checks if it is possible to write to the buffer
+/// @param self
+/// @return true if possible, false otherwise
 bool nbsStepsAllowedToAdd(const NbsSteps* self)
 {
     return self->stepsCount < 24;
@@ -126,6 +141,12 @@ static int nbsStepsReadHelper(NbsSteps* self, const StepInfo* info, uint8_t* dat
     return info->octetCount;
 }
 
+/// Reads the next step in the buffer, if any.
+/// @param self
+/// @param stepId
+/// @param data
+/// @param maxTarget
+/// @return octet count for the step read, or negative value on error
 int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget)
 {
     if (self->stepsCount == 0) {
@@ -144,6 +165,10 @@ int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget
     return nbsStepsReadHelper(self, info, data, maxTarget);
 }
 
+/// Gets an index for a specific tickId (stepId)
+/// @param self
+/// @param stepId
+/// @return negative if stepId is not found
 int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId)
 {
     if (self->stepsCount == 0) {
@@ -151,7 +176,7 @@ int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId)
         return -2;
     }
 
-    for (int i = 0; i < self->stepsCount; ++i) {
+    for (size_t i = 0U; i < self->stepsCount; ++i) {
         int infoIndex = tc_modulo(self->infoTailIndex + i, NBS_WINDOW_SIZE);
         const StepInfo* info = &self->infos[infoIndex];
         if (info->stepId == stepId) {
@@ -161,6 +186,12 @@ int nbsStepsGetIndexForStep(const NbsSteps* self, StepId stepId)
     return -1;
 }
 
+/// Reads a step at the specified index
+/// @param self
+/// @param infoIndex
+/// @param data
+/// @param maxTarget
+/// @return
 int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size_t maxTarget)
 {
     if (infoIndex < 0) {
@@ -187,6 +218,10 @@ int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size
     return info->octetCount;
 }
 
+/// Discard one step
+/// @param self
+/// @param stepId fills out the TickId for the step
+/// @return negative on error
 int nbsStepsDiscard(struct NbsSteps* self, StepId* stepId)
 {
     const StepInfo* info;
@@ -196,10 +231,15 @@ int nbsStepsDiscard(struct NbsSteps* self, StepId* stepId)
         CLOG_C_SOFT_ERROR(&self->log, "couldn't advance tail")
         return errorCode;
     }
+    *stepId = info->stepId;
 
     return discoidBufferSkip(&self->stepsData, info->octetCount);
 }
 
+/// Discards up to, but not including the specified TickId.
+/// @param self
+/// @param stepIdToDiscardTo
+/// @return number of steps actually discarded or negative on error
 int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo)
 {
     if (self->stepsCount == 0) {
@@ -233,6 +273,10 @@ int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo)
     return discardedCount;
 }
 
+/// Discards a number of steps from the buffer
+/// @param self
+/// @param stepCountToDiscard
+/// @return
 int nbsStepsDiscardCount(NbsSteps* self, size_t stepCountToDiscard)
 {
     if (self->stepsCount < stepCountToDiscard) {
@@ -240,7 +284,7 @@ int nbsStepsDiscardCount(NbsSteps* self, size_t stepCountToDiscard)
         return -99;
     }
 
-    for (size_t i=0; i<stepCountToDiscard; ++i) {
+    for (size_t i = 0; i < stepCountToDiscard; ++i) {
         StepId discardedStepId;
         int errorCode = nbsStepsDiscard(self, &discardedStepId);
         if (errorCode < 0) {
@@ -251,6 +295,13 @@ int nbsStepsDiscardCount(NbsSteps* self, size_t stepCountToDiscard)
     return 0;
 }
 
+/// Writes a step to the buffer
+/// The stepId must be one more than the previous one inserted. The specified stepId is only used for debugging.
+/// @param self
+/// @param stepId only used for debugging, must be the expectedWriteId.
+/// @param data
+/// @param stepSize
+/// @return
 int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t stepSize)
 {
     if (stepSize > 1024) {
@@ -258,7 +309,7 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
         return -3;
     }
 
-    if (self->stepsCount == NBS_WINDOW_SIZE/2) {
+    if (self->stepsCount == NBS_WINDOW_SIZE / 2) {
         CLOG_C_ERROR(&self->log, "buffer is full. Do not know how to handle it. %zu out of %d", self->stepsCount,
                      NBS_WINDOW_SIZE)
         return -6;
@@ -300,6 +351,10 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     return stepSize;
 }
 
+/// Checks the tickId of the next step available for reading from the buffer, but does not read it.
+/// @param self
+/// @param stepId
+/// @return true if a step existed, false otherwise.
 bool nbsStepsPeek(NbsSteps* self, StepId* stepId)
 {
     if (self->stepsCount == 0) {
@@ -312,6 +367,10 @@ bool nbsStepsPeek(NbsSteps* self, StepId* stepId)
     return true;
 }
 
+/// Returns the latest tickId written to the buffer
+/// @param self
+/// @param id
+/// @return true if the buffer contains steps, false otherwise.
 bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id)
 {
     if (self->stepsCount == 0) {
@@ -324,6 +383,10 @@ bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id)
     return true;
 }
 
+/// Debug logging
+/// @param self
+/// @param debug
+/// @param flags
 void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
 {
 #if CLOG_LOG_ENABLED
@@ -333,7 +396,7 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
         CLOG_C_VERBOSE(&self->log, "=== nimble steps '%s' empty", debug)
     } else {
         CLOG_C_VERBOSE(&self->log, "=== nimble steps '%s' from %08X to %08X (count:%zu)", debug, self->expectedReadId,
-                    self->expectedWriteId - 1, count)
+                       self->expectedWriteId - 1, count)
     }
     char extraInfo[1024];
     StepId stepIdToShow = self->expectedReadId;

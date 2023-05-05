@@ -13,6 +13,13 @@ static void nbsPendingStepDebugOutput(const NbsPendingStep* self, int index, con
     // self->payloadLength);
 }
 
+/// Initializes a pending step
+
+/// @param self
+/// @param payload
+/// @param payloadLength
+/// @param idForDebug
+/// @param allocatorWithFree
 void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug,
                         struct ImprintAllocatorWithFree* allocatorWithFree)
 {
@@ -42,6 +49,13 @@ void nbsPendingStepDestroy(NbsPendingStep* self)
     self->idForDebug = NIMBLE_STEP_MAX;
 }
 
+/// Pending Steps are for steps that can be received out of sequence and in different ranges
+/// using an unreliable datagram transport.
+/// Typically used on the client to receive steps from the server and send a receive bitmask back
+/// @param self
+/// @param lateJoinStepId which tickId to start receiving from
+/// @param allocatorWithFree allocator for each individual received step
+/// @param log
 void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAllocatorWithFree* allocatorWithFree,
                          Clog log)
 {
@@ -59,6 +73,9 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAl
     tc_mem_clear_type_n(self->steps, NIMBLE_STEPS_PENDING_WINDOW_SIZE);
 }
 
+/// Resets the pending steps. Usually used for when it is needed to skip ahead
+/// @param self
+/// @param lateJoinStepId tickId to start receiving from
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId)
 {
     nbsPendingStepsInit(self, lateJoinStepId, self->allocatorWithFree, self->log);
@@ -80,6 +97,14 @@ int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
     return 0;
 }
 
+/// Tries to read a single step from the pending steps
+/// Always returns them in order from the last one (except when reset).
+/// @note it doesn't copy the data, only sets the pointer to the existing data
+/// @param self
+/// @param outData the pointer to the static data
+/// @param outLength the number of octets in outData
+/// @param outId the TickId for the step
+/// @return number of pending steps returned, or negative value on error
 int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_t* outLength, StepId* outId)
 {
     if (self->debugCount == 0) {
@@ -115,6 +140,10 @@ int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_
     return 1;
 }
 
+/// Moves steps from pending steps to a target in order steps
+/// @param target
+/// @param self
+/// @return zero on success or negative on error
 int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
 {
     const uint8_t* data;
@@ -153,6 +182,15 @@ uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
     return self->receiveMask;
 }
 
+
+/// Calculates the ranges to send to the remote given a range of TickIds and a receive mask.
+/// @param headId
+/// @param tailId
+/// @param mask
+/// @param ranges
+/// @param maxRangeCount
+/// @param stepCountMax
+/// @return
 int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxRangeCount,
                           size_t stepCountMax)
 {
@@ -290,6 +328,12 @@ void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, 
     }
 }
 
+/// Tries to set a pending step with the specified TickId.
+/// @param self
+/// @param stepId
+/// @param payload
+/// @param payloadLength
+/// @return 1 on success, negative on error
 int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* payload, size_t payloadLength)
 {
     int index = stepIdToIndex(self, stepId);

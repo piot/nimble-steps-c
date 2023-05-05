@@ -38,7 +38,6 @@ typedef struct NbsSteps {
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount);
 size_t nbsStepsDropped(const NbsSteps* self, StepId firstReadStepId);
 void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t maxTarget, Clog log);
-void nbsStepsDestroy(NbsSteps* self);
 void nbsStepsReInit(NbsSteps* self, StepId initialId);
 void nbsStepsReset(NbsSteps* self);
 bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id);

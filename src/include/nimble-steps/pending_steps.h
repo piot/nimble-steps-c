@@ -2,8 +2,8 @@
  *  Copyright (c) Peter Bjorklund. All rights reserved.
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-#ifndef NIMBLE_STEPS_EXAMPLE_PENDING_STEPS_H
-#define NIMBLE_STEPS_EXAMPLE_PENDING_STEPS_H
+#ifndef NIMBLE_STEPS_PENDING_STEPS_H
+#define NIMBLE_STEPS_PENDING_STEPS_H
 
 #define NIMBLE_STEPS_PENDING_WINDOW_SIZE (64)
 #include <nimble-steps/steps.h>
@@ -35,6 +35,9 @@ void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t pay
                         struct ImprintAllocatorWithFree* allocator);
 void nbsPendingStepDestroy(NbsPendingStep* self);
 
+/// Pending Steps are for steps that can be received out of sequence and in different ranges
+/// using an unreliable datagram transport.
+/// Typically used on the client to receive steps from the server.
 typedef struct NbsPendingSteps {
     NbsPendingStep steps[NIMBLE_STEPS_PENDING_WINDOW_SIZE];
     int writeIndex;
