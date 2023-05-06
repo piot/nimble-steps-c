@@ -383,6 +383,20 @@ bool nbsStepsLatestStepId(const NbsSteps* self, StepId* id)
     return true;
 }
 
+/// The number of tickIds that are ahead of what is supposed to be written to the buffer
+/// @param self
+/// @param firstReadStepId
+/// @return
+size_t nbsStepsDropped(const NbsSteps* self, StepId firstReadStepId)
+{
+    if (firstReadStepId > self->expectedWriteId) {
+        return firstReadStepId - self->expectedWriteId;
+    }
+
+    return 0;
+}
+
+
 /// Debug logging
 /// @param self
 /// @param debug
