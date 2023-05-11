@@ -248,7 +248,7 @@ int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo)
 
     if (stepIdToDiscardTo <= self->expectedReadId) {
         if (stepIdToDiscardTo < self->expectedReadId) {
-            CLOG_C_WARN(&self->log, "this happened a while back: %08X vs our start %08X", stepIdToDiscardTo,
+            CLOG_C_WARN(&self->log, "nbsStepsDiscardUpTo: this happened a while back: %08X vs our start %08X", stepIdToDiscardTo,
                         self->expectedReadId);
         }
         return 0;
@@ -316,7 +316,7 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     }
 
     if (self->expectedWriteId != stepId) {
-        CLOG_C_SOFT_ERROR(&self->log, "expected write %d but got %d", self->expectedWriteId, stepId)
+        CLOG_C_SOFT_ERROR(&self->log, "expected write %08X but got %08X", self->expectedWriteId, stepId)
         return -4;
     }
 
