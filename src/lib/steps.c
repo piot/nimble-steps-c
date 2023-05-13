@@ -103,7 +103,7 @@ void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t max
 /// @return true if possible, false otherwise
 bool nbsStepsAllowedToAdd(const NbsSteps* self)
 {
-    return self->stepsCount < 24;
+    return self->stepsCount < NBS_WINDOW_SIZE/4;
 }
 
 #define NBS_ADVANCE(index) index = (index + 1) % NBS_WINDOW_SIZE
