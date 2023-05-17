@@ -8,7 +8,7 @@
 #include <nimble-steps/types.h>
 #include <stdbool.h>
 #include <stdint.h>
-
+#include <clog/clog.h>
 
 typedef uint64_t NimbleStepsReceiveMaskBits;
 
