@@ -1,7 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Peter Bjorklund. All rights reserved.
- *  Licensed under the MIT License. See LICENSE in the project root for license
- *information.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 #include <clog/clog.h>
 #include <imprint/allocator.h>
@@ -64,12 +63,8 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAl
     self->readIndex = 0;
     self->writeIndex = 0;
     self->readId = lateJoinStepId;
-    self->expectingWriteId = lateJoinStepId;
-    self->receiveMask = NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED; // If we don't mark
-                                                                        // everything as received,
-                                                                        // we will get resent old
-                                                                        // steps
     self->allocatorWithFree = allocatorWithFree;
+    nimbleStepsReceiveMaskInit(&self->receiveMask, lateJoinStepId);
     tc_mem_clear_type_n(self->steps, NIMBLE_STEPS_PENDING_WINDOW_SIZE);
 }
 
@@ -178,21 +173,20 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
 
 uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
 {
-    *headId = self->expectingWriteId;
-    return self->receiveMask;
+    *headId = self->receiveMask.expectingWriteId;
+    return self->receiveMask.receiveMask;
 }
 
-
 /// Calculates the ranges to send to the remote given a range of TickIds and a receive mask.
-/// @param headId
-/// @param tailId
+/// @param maskStartsAtStepId
+/// @param maximumAvailableStepId
 /// @param mask
 /// @param ranges
 /// @param maxRangeCount
 /// @param stepCountMax
 /// @return
-int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxRangeCount,
-                          size_t stepCountMax)
+int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvailablePlusOneStepId, uint64_t mask,
+                          NbsPendingRange* ranges, size_t maxRangeCount, size_t stepCountMax)
 {
     size_t index = 0;
     bool isInsideRange = false;
@@ -201,16 +195,20 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
     for (int i = 63; i >= 0; --i) {
         int bit = (mask >> i) & 0x1;
         if (!bit && !isInsideRange) {
-            if (i + tailId >= headId) {
+            if (i + maskStartsAtOneLessStepId >= maximumAvailablePlusOneStepId) {
+                CLOG_DEBUG("found start but skipping since %d + %d > %d start", i, maximumAvailablePlusOneStepId,
+                           maskStartsAtOneLessStepId);
                 continue;
             }
-            StepId id = headId - i;
+            StepId id = maskStartsAtOneLessStepId - i - 1;
+            CLOG_DEBUG("found start %zu", id);
             ranges[index].startId = id;
             ranges[index].count = 0;
             isInsideRange = true;
             rangeIndex = i;
         } else if (bit && isInsideRange) {
             size_t count = rangeIndex - i;
+            CLOG_DEBUG("received a step and finishing the range with count %zu", count)
             ranges[index].count = count;
             index++;
             if (stepCountTotal + count >= stepCountMax - 1) {
@@ -227,6 +225,12 @@ int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendin
         }
     }
 
+    if (isInsideRange) {
+        CLOG_DEBUG("add last range %zu", rangeIndex)
+        ranges[index - 1].count = rangeIndex;
+        index++;
+    }
+
     return index;
 }
 
@@ -236,61 +240,6 @@ void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char*
     for (size_t i = 0; i < maxCount; ++i) {
         CLOG_C_VERBOSE(&log, "%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count);
     }
-}
-
-static const char* printBitPosition(size_t count)
-{
-    static char buf[(64 + 1 + 8 + 8) * 2 + 1];
-
-    int strPos = 0;
-    for (size_t i = 0; i < count; ++i) {
-        if ((i % 8) == 0) {
-            buf[strPos++] = '.';
-        } else if ((i % 4) == 0) {
-            buf[strPos++] = ' ';
-        }
-        buf[strPos++] = 48 + ((63 - i) / 10);
-    }
-    buf[strPos++] = '\n';
-    for (size_t i = 0; i < count; ++i) {
-        if ((i % 8) == 0) {
-            buf[strPos++] = '.';
-        } else if ((i % 4) == 0) {
-            buf[strPos++] = ' ';
-        }
-        buf[strPos++] = 48 + ((63 - i) % 10);
-    }
-    buf[strPos] = 0;
-    return buf;
-}
-
-static const char* printBits(uint64_t bits)
-{
-    static char buf[64 + 1 + 8 + 8];
-
-    int strPos = 0;
-    for (size_t i = 0; i < 64; ++i) {
-        uint64_t test = 1ULL << (63 - i);
-        if ((i % 8) == 0) {
-            buf[strPos++] = '.';
-        } else if ((i % 4) == 0) {
-            buf[strPos++] = ' ';
-        }
-        buf[strPos++] = (bits & test) ? '1' : '0';
-    }
-    buf[strPos] = 0;
-    return buf;
-}
-
-void nbsPendingStepsDebugReceiveMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug, Clog log)
-{
-    CLOG_C_INFO(&log, "'%s' pending steps receiveMask head: %08X mask: \n%s\n%s", debug, headStepId,
-                printBitPosition(64), printBits(receiveMask));
-}
-
-void nbsPendingStepsDebugReceiveMask(const NbsPendingSteps* self, const char* debug)
-{
-    nbsPendingStepsDebugReceiveMaskExt(self->expectingWriteId, self->receiveMask, debug, self->log);
 }
 
 static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)
@@ -360,22 +309,16 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
         // CLOG_VERBOSE("setting %08X (index %d) for the first time", stepId,
         // index);
     }
-    if (stepId >= self->expectingWriteId) {
-        int advanceBits = (stepId - self->expectingWriteId) + 1;
-        self->receiveMask <<= advanceBits;
-        self->receiveMask |= 0x1;
-        self->expectingWriteId = stepId + 1;
+    if (stepId >= self->receiveMask.expectingWriteId) {
         self->writeIndex = index;
-    } else {
-        // It was a previous step
-        size_t bitsFromHead = (self->expectingWriteId - stepId) - 1;
-        if (bitsFromHead > 63) {
-            CLOG_C_SOFT_ERROR(&self->log, "Illegal protocol bitsFromHead")
-            return -44;
-        }
-        uint64_t maskForThisStep = 1ULL << bitsFromHead;
-        self->receiveMask |= maskForThisStep;
     }
+
+    int maskError = nimbleStepsReceiveMaskReceivedStep(&self->receiveMask, stepId);
+    if (maskError < 0) {
+        CLOG_C_SOFT_ERROR(&self->log, "could not update receive mask %d", maskError)
+        return -1;
+    }
+
     if (existingStep->payload) {
         IMPRINT_FREE(self->allocatorWithFree, (void*) existingStep->payload);
     }

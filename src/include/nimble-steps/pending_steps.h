@@ -6,8 +6,8 @@
 #define NIMBLE_STEPS_PENDING_STEPS_H
 
 #define NIMBLE_STEPS_PENDING_WINDOW_SIZE (64)
+#include <nimble-steps/receive_mask.h>
 #include <nimble-steps/steps.h>
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -29,8 +29,6 @@ typedef struct NbsPendingRange {
     size_t count;
 } NbsPendingRange;
 
-#define NIMBLE_STEPS_PENDING_RECEIVE_MASK_ALL_RECEIVED (UINT64_MAX)
-
 void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug,
                         struct ImprintAllocatorWithFree* allocator);
 void nbsPendingStepDestroy(NbsPendingStep* self);
@@ -43,15 +41,14 @@ typedef struct NbsPendingSteps {
     int writeIndex;
     int readIndex;
     size_t debugCount;
-    StepId expectingWriteId;
     StepId readId;
-    uint64_t receiveMask;
     struct ImprintAllocatorWithFree* allocatorWithFree;
+    NimbleStepsReceiveMask receiveMask;
     Clog log;
 } NbsPendingSteps;
 
-int nbsPendingStepsRanges(StepId headId, StepId tailId, uint64_t mask, NbsPendingRange* ranges, size_t maxCount,
-                          size_t stepMaxCount);
+int nbsPendingStepsRanges(StepId maskStartsAtStepId, StepId maximumAvailableStepId, uint64_t mask,
+                          NbsPendingRange* ranges, size_t maxCount, size_t stepMaxCount);
 void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount, Clog log);
 
 void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId,

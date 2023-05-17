@@ -8,10 +8,8 @@
 #include <clog/clog.h>
 #include <discoid/circular_buffer.h>
 #include <stdbool.h>
+#include <nimble-steps/types.h>
 
-typedef uint32_t StepId;
-
-static const StepId NIMBLE_STEP_MAX = 0xffffffff;
 
 #define NBS_WINDOW_SIZE (240)
 #define NBS_RETREAT(index) tc_modulo((index - 1), NBS_WINDOW_SIZE)
