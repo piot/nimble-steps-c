@@ -14,7 +14,7 @@ UTEST(NimbleSteps, verifyReceiveMask)
     StepId lastId = 80;
     uint64_t mask = NimbleStepsReceiveMaskAllReceived & (~0b110);
 
-    int rangeCount = nbsPendingStepsRanges(startId - 1, lastId, mask, targetRanges, 4, 20);
+    int rangeCount = nbsPendingStepsRanges(startId, lastId, mask, targetRanges, 4, 20);
 
     Clog log;
 
