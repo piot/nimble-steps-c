@@ -201,7 +201,7 @@ int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvaila
                 continue;
             }
             StepId id = maskStartsAtOneLessStepId - i - 1;
-            CLOG_DEBUG("found start %zu", id);
+            CLOG_DEBUG("found start %u", id);
             ranges[index].startId = id;
             ranges[index].count = 0;
             isInsideRange = true;
@@ -226,7 +226,7 @@ int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvaila
     }
 
     if (isInsideRange) {
-        CLOG_DEBUG("add last range %zu", rangeIndex)
+        CLOG_DEBUG("add last range %d", rangeIndex)
         ranges[index - 1].count = rangeIndex;
         index++;
     }
