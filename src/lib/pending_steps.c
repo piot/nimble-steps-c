@@ -258,23 +258,6 @@ static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)
 
 void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, int flags)
 {
-    // CLOG_INFO("pending steps '%s' count:%zu head: %08X mask: \n%s\n%s", debug,
-    // self->debugCount, self->expectingWriteId, printBitPosition(64),
-    // printBits(self->receiveMask) );
-    for (size_t i = 0; i < NIMBLE_STEPS_PENDING_WINDOW_SIZE; ++i) {
-        const char* prefix = "  ";
-        const char* prefix2 = "  ";
-        // const NbsPendingStep* entry = &self->steps[i];
-        int forceThisLine = 0;
-        if (i == self->writeIndex) {
-            prefix = "H>";
-            forceThisLine = 1;
-        }
-        if (i == self->readIndex) {
-            prefix2 = "T>";
-            forceThisLine = 1;
-        }
-    }
 }
 
 /// Tries to set a pending step with the specified TickId.
