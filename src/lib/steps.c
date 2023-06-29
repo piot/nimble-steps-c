@@ -25,7 +25,7 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
     fldInStreamReadUInt8(&stepInStream, &participantCountInStep);
 
     if (participantCountInStep > 64) {
-        CLOG_SOFT_ERROR("combined step: participant count is too high %d", participantCountInStep);
+        CLOG_SOFT_ERROR("combined step: participant count is too high %d", participantCountInStep)
         return -4;
     }
 
@@ -33,14 +33,14 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
         uint8_t participantId;
         fldInStreamReadUInt8(&stepInStream, &participantId);
         if (participantId > 8) {
-            CLOG_SOFT_ERROR("combined step: participantId is too high %u", participantId);
+            CLOG_SOFT_ERROR("combined step: participantId is too high %u", participantId)
             return -3;
         }
 
         uint8_t octetCountForStep;
         fldInStreamReadUInt8(&stepInStream, &octetCountForStep);
         if (octetCountForStep > 128) {
-            CLOG_SOFT_ERROR("combined step: individual step size is suspicious %d", octetCountForStep);
+            CLOG_SOFT_ERROR("combined step: individual step size is suspicious %d", octetCountForStep)
             return -6;
         }
 
@@ -114,7 +114,7 @@ static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
     NBS_ADVANCE(self->infoTailIndex);
 
     if (info->stepId != self->expectedReadId) {
-        CLOG_C_ERROR(&self->log, "expected to read %d but encountered %d", self->expectedReadId, info->stepId);
+        CLOG_C_ERROR(&self->log, "expected to read %d but encountered %d", self->expectedReadId, info->stepId)
         //*outInfo = 0;
         //return -3;
     }
@@ -128,7 +128,7 @@ static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
 static int nbsStepsReadHelper(NbsSteps* self, const StepInfo* info, uint8_t* data, size_t maxTarget)
 {
     if (info->octetCount > maxTarget) {
-        CLOG_C_ERROR(&self->log, "wrong octet count in steps data");
+        CLOG_C_ERROR(&self->log, "wrong octet count in steps data")
         // return -3;
     }
 
@@ -210,7 +210,7 @@ int nbsStepsReadAtIndex(const NbsSteps* self, int infoIndex, uint8_t* data, size
 
     int verifyError = nbsStepsVerifyStep(data, info->octetCount);
     if (verifyError < 0) {
-        CLOG_C_SOFT_ERROR(&self->log, "wrong step stored in discoid buffer");
+        CLOG_C_SOFT_ERROR(&self->log, "wrong step stored in discoid buffer")
         return verifyError;
     }
 
@@ -248,7 +248,7 @@ int nbsStepsDiscardUpTo(NbsSteps* self, StepId stepIdToDiscardTo)
     if (stepIdToDiscardTo <= self->expectedReadId) {
         if (stepIdToDiscardTo < self->expectedReadId) {
             CLOG_C_WARN(&self->log, "nbsStepsDiscardUpTo: this happened a while back: %08X vs our start %08X",
-                        stepIdToDiscardTo, self->expectedReadId);
+                        stepIdToDiscardTo, self->expectedReadId)
         }
         return 0;
     }

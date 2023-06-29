@@ -191,11 +191,11 @@ int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvaila
         if (!bit && !isInsideRange) {
             if ((size_t) i + maskStartsAtOneLessStepId >= maximumAvailablePlusOneStepId) {
                 CLOG_DEBUG("found start but skipping since %d + %d > %d start", i, maximumAvailablePlusOneStepId,
-                           maskStartsAtOneLessStepId);
+                           maskStartsAtOneLessStepId)
                 continue;
             }
             StepId id = maskStartsAtOneLessStepId - (StepId) i - 1;
-            CLOG_DEBUG("found start %u", id);
+            CLOG_DEBUG("found start %u", id)
             ranges[index].startId = id;
             ranges[index].count = 0;
             isInsideRange = true;
@@ -286,10 +286,10 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
             if (tc_memcmp(existingStep->payload, payload, payloadLength) == 0) {
                 return 0;
             }
-            CLOG_SOFT_ERROR("was already in use with different data %d", index);
+            CLOG_SOFT_ERROR("was already in use with different data %d", index)
             return -3;
         }
-        CLOG_SOFT_ERROR("was already in use %d", index);
+        CLOG_SOFT_ERROR("was already in use %d", index)
         return -2;
     } else {
 
