@@ -6,26 +6,20 @@
 #include <imprint/allocator.h>
 #include <nimble-steps/pending_steps.h>
 
-static void nbsPendingStepDebugOutput(const NbsPendingStep* self, int index, const char* name)
-{
-    // CLOG_INFO("%d: %08X %s (octet count:%zu)", index, self->idForDebug, name,
-    // self->payloadLength);
-}
-
 /// Initializes a pending step
 
-/// @param self
-/// @param payload
-/// @param payloadLength
-/// @param idForDebug
-/// @param allocatorWithFree
+/// @param self pending steps
+/// @param payload payload
+/// @param payloadLength length of payload
+/// @param idForDebug the id associated with this step
+/// @param allocatorWithFree allocator used to free the copy on nbsPendingStepDestroy.
 void nbsPendingStepInit(NbsPendingStep* self, const uint8_t* payload, size_t payloadLength, StepId idForDebug,
                         struct ImprintAllocatorWithFree* allocatorWithFree)
 {
     int code = nbsStepsVerifyStep(payload, payloadLength);
     if (code < 0) {
         CLOG_ERROR("nbsPendingStepInit: not a correctly serialized step. can not read")
-        return;
+        // return;
     }
 
     self->idForDebug = idForDebug;
@@ -51,10 +45,10 @@ void nbsPendingStepDestroy(NbsPendingStep* self)
 /// Pending Steps are for steps that can be received out of sequence and in different ranges
 /// using an unreliable datagram transport.
 /// Typically used on the client to receive steps from the server and send a receive bitmask back
-/// @param self
+/// @param self pending steps
 /// @param lateJoinStepId which tickId to start receiving from
 /// @param allocatorWithFree allocator for each individual received step
-/// @param log
+/// @param log the log to be used
 void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAllocatorWithFree* allocatorWithFree,
                          Clog log)
 {
@@ -69,7 +63,7 @@ void nbsPendingStepsInit(NbsPendingSteps* self, StepId lateJoinStepId, ImprintAl
 }
 
 /// Resets the pending steps. Usually used for when it is needed to skip ahead
-/// @param self
+/// @param self pending steps
 /// @param lateJoinStepId tickId to start receiving from
 void nbsPendingStepsReset(NbsPendingSteps* self, StepId lateJoinStepId)
 {
@@ -83,7 +77,7 @@ bool nbsPendingStepsCanBeAdvanced(const NbsPendingSteps* self)
 
 int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
 {
-    if (tc_modulo((self->readId - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE) != (int) id) {
+    if (tc_modulo((int) (self->readId - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE) != (int) id) {
         return -2;
     }
     int lastReadIndex = tc_modulo((self->readIndex - 1), NIMBLE_STEPS_PENDING_WINDOW_SIZE);
@@ -95,7 +89,7 @@ int nbsPendingStepsReadDestroy(NbsPendingSteps* self, StepId id)
 /// Tries to read a single step from the pending steps
 /// Always returns them in order from the last one (except when reset).
 /// @note it doesn't copy the data, only sets the pointer to the existing data
-/// @param self
+/// @param self pending steps
 /// @param outData the pointer to the static data
 /// @param outLength the number of octets in outData
 /// @param outId the TickId for the step
@@ -129,15 +123,15 @@ int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_
     int code = nbsStepsVerifyStep(item->payload, item->payloadLength);
     if (code < 0) {
         CLOG_C_ERROR(&self->log, "nbsPendingStepsTryRead: not a correctly serialized step. can not read")
-        return code;
+        // return code;
     }
 
     return 1;
 }
 
 /// Moves steps from pending steps to a target in order steps
-/// @param target
-/// @param self
+/// @param target target buffer to copy into
+/// @param self pending steps
 /// @return zero on success or negative on error
 int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
 {
@@ -158,7 +152,7 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
         int foundParticipantCount = nbsStepsVerifyStep(data, length);
         if (foundParticipantCount < 0) {
             CLOG_C_ERROR(&self->log, "nbsPendingStepsCopy: could not verify step of size:%zu", length)
-            return foundParticipantCount;
+            // return foundParticipantCount;
         }
 
         CLOG_C_VERBOSE(&self->log, "writing authoritative %08X of size:%zu", outId, length)
@@ -178,47 +172,47 @@ uint64_t nbsPendingStepsReceiveMask(const NbsPendingSteps* self, StepId* headId)
 }
 
 /// Calculates the ranges to send to the remote given a range of TickIds and a receive mask.
-/// @param maskStartsAtStepId
-/// @param maximumAvailableStepId
-/// @param mask
-/// @param ranges
-/// @param maxRangeCount
-/// @param stepCountMax
-/// @return
+/// @param maskStartsAtOneLessStepId from which step id to apply the mask backwards in time
+/// @param maximumAvailablePlusOneStepId the number of steps available to send
+/// @param mask the receive mask
+/// @param ranges target ranges array
+/// @param maxRangeCount maximum number of ranges in ranges array.
+/// @param stepCountMax the maximum number of octets for each step
+/// @return the number of ranges produced or negative on error
 int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvailablePlusOneStepId, uint64_t mask,
                           NbsPendingRange* ranges, size_t maxRangeCount, size_t stepCountMax)
 {
     size_t index = 0;
     bool isInsideRange = false;
-    int rangeIndex;
+    int rangeIndex = 0;
     size_t stepCountTotal = 0;
     for (int i = 63; i >= 0; --i) {
         int bit = (mask >> i) & 0x1;
         if (!bit && !isInsideRange) {
-            if (i + maskStartsAtOneLessStepId >= maximumAvailablePlusOneStepId) {
+            if ((size_t) i + maskStartsAtOneLessStepId >= maximumAvailablePlusOneStepId) {
                 CLOG_DEBUG("found start but skipping since %d + %d > %d start", i, maximumAvailablePlusOneStepId,
-                           maskStartsAtOneLessStepId);
+                           maskStartsAtOneLessStepId)
                 continue;
             }
-            StepId id = maskStartsAtOneLessStepId - i - 1;
-            CLOG_DEBUG("found start %u", id);
+            StepId id = maskStartsAtOneLessStepId - (StepId) i - 1;
+            CLOG_DEBUG("found start %u", id)
             ranges[index].startId = id;
             ranges[index].count = 0;
             isInsideRange = true;
             rangeIndex = i;
         } else if (bit && isInsideRange) {
-            size_t count = rangeIndex - i;
+            size_t count = (size_t) (rangeIndex - i);
             CLOG_DEBUG("received a step and finishing the range with count %zu", count)
             ranges[index].count = count;
             index++;
             if (stepCountTotal + count >= stepCountMax - 1) {
                 count = stepCountMax - stepCountTotal;
                 ranges[index - 1].count = count;
-                return index;
+                return (int) index;
             }
             stepCountTotal += count;
             if (index == maxRangeCount) {
-                return index;
+                return (int) index;
             }
             rangeIndex = -1;
             isInsideRange = false;
@@ -227,19 +221,26 @@ int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvaila
 
     if (isInsideRange) {
         CLOG_DEBUG("add last range %d", rangeIndex)
-        ranges[index - 1].count = rangeIndex;
+        ranges[index - 1].count = (size_t) rangeIndex;
         index++;
     }
 
-    return index;
+    return (int) index;
 }
 
 void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char* debug, size_t maxCount, Clog log)
 {
-    CLOG_C_VERBOSE(&log, "--- ranges '%s' number of ranges:%zu", debug, maxCount);
+#if defined CLOG_LOG_ENABLED
+    CLOG_C_VERBOSE(&log, "--- ranges '%s' number of ranges:%zu", debug, maxCount)
     for (size_t i = 0; i < maxCount; ++i) {
-        CLOG_C_VERBOSE(&log, "%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count);
+        CLOG_C_VERBOSE(&log, "%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count)
     }
+#else
+    (void) ranges;
+    (void) debug;
+    (void) maxCount;
+    (void) log;
+#endif
 }
 
 static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)
@@ -249,7 +250,7 @@ static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)
         // self->tailId);
         return -2;
     }
-    int delta = stepId - self->readId;
+    int delta = (int) (stepId - self->readId);
     if (delta >= NIMBLE_STEPS_PENDING_WINDOW_SIZE) {
         return -1;
     }
@@ -258,13 +259,16 @@ static int stepIdToIndex(const NbsPendingSteps* self, StepId stepId)
 
 void nbsPendingStepsDebugOutput(const NbsPendingSteps* self, const char* debug, int flags)
 {
+    (void) self;
+    (void) debug;
+    (void) flags;
 }
 
 /// Tries to set a pending step with the specified TickId.
-/// @param self
-/// @param stepId
-/// @param payload
-/// @param payloadLength
+/// @param self pending steps
+/// @param stepId stepId to set
+/// @param payload application specific step payload
+/// @param payloadLength payload length
 /// @return 1 on success, negative on error
 int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* payload, size_t payloadLength)
 {
@@ -282,10 +286,10 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
             if (tc_memcmp(existingStep->payload, payload, payloadLength) == 0) {
                 return 0;
             }
-            CLOG_SOFT_ERROR("was already in use with different data %d", index);
+            CLOG_SOFT_ERROR("was already in use with different data %d", index)
             return -3;
         }
-        CLOG_SOFT_ERROR("was already in use %d", index);
+        CLOG_SOFT_ERROR("was already in use %d", index)
         return -2;
     } else {
 

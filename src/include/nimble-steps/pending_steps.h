@@ -17,7 +17,7 @@ struct ImprintAllocator;
 struct ImprintAllocatorWithFree;
 
 typedef struct NbsPendingStep {
-    const uint8_t* payload;
+    uint8_t* payload;
     size_t payloadLength;
     StepId idForDebug;
     int isInUse;
