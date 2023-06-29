@@ -6,6 +6,7 @@
 #include <nimble-steps/receive_mask.h>
 #include <stddef.h>
 
+#if defined CLOG_LOG_ENABLED
 static const char* printBitPosition(size_t count)
 {
     static char buf[(64 + 1 + 8 + 8) * 2 + 1];
@@ -17,7 +18,7 @@ static const char* printBitPosition(size_t count)
         } else if ((i % 4) == 0) {
             buf[strPos++] = '.';
         }
-        buf[strPos++] = 48 + ((63 - i) / 10);
+        buf[strPos++] = (char)(48 + ((63 - i) / 10));
     }
     buf[strPos++] = '\n';
     for (size_t i = 0; i < count; ++i) {
@@ -49,11 +50,19 @@ static const char* printBits(uint64_t bits)
     buf[strPos] = 0;
     return buf;
 }
+#endif
 
 static void nimbleStepsReceiveMaskDebugMaskExt(StepId headStepId, uint64_t receiveMask, const char* debug, Clog log)
 {
+    (void) headStepId;
+#if defined CLOG_LOG_ENABLED
     CLOG_C_INFO(&log, "'%s' pending steps receiveMask head: %08X mask: \n%s\n%s", debug, headStepId,
-                printBitPosition(64), printBits(receiveMask));
+                printBitPosition(64), printBits(receiveMask))
+#else
+    (void) receiveMask;
+    (void) debug;
+    (void) log;
+#endif
 }
 
 void nimbleStepsReceiveMaskDebugMask(const NimbleStepsReceiveMask* self, const char* debug, Clog log)
@@ -65,8 +74,8 @@ void nimbleStepsReceiveMaskDebugMask(const NimbleStepsReceiveMask* self, const c
 /// It keeps a mask of all steps that has been received before the `expectingWriteId`.
 /// the steps are in order from lowest bit to highest bit. The lowest bit is always set.
 /// `1001` and expectingWriteId = 30 means that packet 29 and 26 was received and 27 and 28 has not been received.
-/// @param self
-/// @param startId
+/// @param self receive mask
+/// @param startId initial step ID
 void nimbleStepsReceiveMaskInit(NimbleStepsReceiveMask* self, StepId startId)
 {
     self->receiveMask = NimbleStepsReceiveMaskAllReceived; // If we don't mark
@@ -80,7 +89,7 @@ void nimbleStepsReceiveMaskInit(NimbleStepsReceiveMask* self, StepId startId)
 int nimbleStepsReceiveMaskReceivedStep(NimbleStepsReceiveMask* self, StepId stepId)
 {
     if (stepId >= self->expectingWriteId) {
-        int advanceBits = (stepId - self->expectingWriteId) + 1;
+        int advanceBits = (int) ((stepId - self->expectingWriteId) + 1);
         if (advanceBits > 63) {
             CLOG_SOFT_ERROR("nimble steps receive mask: advancing too far into the future")
             return -51;

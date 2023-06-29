@@ -16,3 +16,4 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 cmake-*/
+src/test/nimble_steps_test

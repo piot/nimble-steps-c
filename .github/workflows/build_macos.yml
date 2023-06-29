@@ -1,18 +1,12 @@
-name: build linux
+name: build mac os
 on: [push]
 jobs:
   build:
-    name: Build
-    runs-on: ubuntu-22.04
+    name: Build MacOS
+    runs-on: macos-12
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: '16.0.4'
-          env: true
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.11
@@ -42,6 +36,6 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: Datagram Transport Linux Library
+          name: Datagram Transport MacOS Library
           path: |
             src/lib/libdatagram-transport.a
