@@ -10,7 +10,3 @@ version = "*"
 [[dependencies]]
 name = 'piot/discoid-c'
 version = "*"
-
-[[dependencies]]
-name = 'piot/imprint'
-version = "*"

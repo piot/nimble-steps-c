@@ -5,6 +5,8 @@
 #ifndef NIMBLE_STEPS_TYPES_H
 #define NIMBLE_STEPS_TYPES_H
 
+#include <stdint.h>
+
 typedef uint32_t StepId;
 
 static const StepId NIMBLE_STEP_MAX = 0xffffffff;
