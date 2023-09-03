@@ -32,22 +32,29 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
     for (size_t i = 0; i < participantCountInStep; ++i) {
         uint8_t participantId;
         fldInStreamReadUInt8(&stepInStream, &participantId);
+        bool masked = participantId & 0x80;
+        if (masked) {
+            participantId &= 0x7f;
+            uint8_t connectState;
+            fldInStreamReadUInt8(&stepInStream, &connectState);
+        } else {
+            uint8_t octetCountForStep;
+            fldInStreamReadUInt8(&stepInStream, &octetCountForStep);
+            if (octetCountForStep > 128) {
+                CLOG_SOFT_ERROR("combined step: individual step size is suspicious %d", octetCountForStep)
+                return -6;
+            }
+
+            stepInStream.p += octetCountForStep;
+            stepInStream.pos += octetCountForStep;
+            if (stepInStream.pos > stepInStream.size) {
+                return -2;
+            }
+        }
+
         if (participantId > 8) {
             CLOG_SOFT_ERROR("combined step: participantId is too high %u", participantId)
             return -3;
-        }
-
-        uint8_t octetCountForStep;
-        fldInStreamReadUInt8(&stepInStream, &octetCountForStep);
-        if (octetCountForStep > 128) {
-            CLOG_SOFT_ERROR("combined step: individual step size is suspicious %d", octetCountForStep)
-            return -6;
-        }
-
-        stepInStream.p += octetCountForStep;
-        stepInStream.pos += octetCountForStep;
-        if (stepInStream.pos > stepInStream.size) {
-            return -2;
         }
     }
 
@@ -116,7 +123,7 @@ static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
     if (info->stepId != self->expectedReadId) {
         CLOG_C_ERROR(&self->log, "expected to read %d but encountered %d", self->expectedReadId, info->stepId)
         //*outInfo = 0;
-        //return -3;
+        // return -3;
     }
     self->expectedReadId++;
     self->stepsCount--;
