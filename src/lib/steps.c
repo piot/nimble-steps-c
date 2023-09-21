@@ -24,7 +24,7 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
     uint8_t participantCountInStep;
     fldInStreamReadUInt8(&stepInStream, &participantCountInStep);
 
-    if (participantCountInStep > 64) {
+    if (participantCountInStep > NimbleStepMaxCombinedStepOctetCount) {
         CLOG_SOFT_ERROR("combined step: participant count is too high %d", participantCountInStep)
         return -4;
     }

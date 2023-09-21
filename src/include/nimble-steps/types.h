@@ -13,7 +13,7 @@ static const StepId NIMBLE_STEP_MAX = 0xffffffff;
 
 static const size_t NimbleStepMaxSingleStepOctetCount = 64;
 static const size_t NimbleStepMaxParticipantCount = 16;
-static const size_t NimbleStepMaxCombinedStepOctetCount = NimbleStepMaxSingleStepOctetCount *
-                                                          NimbleStepMaxParticipantCount;
+static const size_t NimbleStepMaxCombinedStepOctetCount = 512; //NimbleStepMaxSingleStepOctetCount *
+                                                          //NimbleStepMaxParticipantCount;
 
 #endif
