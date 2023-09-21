@@ -11,4 +11,9 @@ typedef uint32_t StepId;
 
 static const StepId NIMBLE_STEP_MAX = 0xffffffff;
 
+static const size_t NimbleStepMaxSingleStepOctetCount = 64;
+static const size_t NimbleStepMaxParticipantCount = 16;
+static const size_t NimbleStepMaxCombinedStepOctetCount = NimbleStepMaxSingleStepOctetCount *
+                                                          NimbleStepMaxParticipantCount;
+
 #endif
