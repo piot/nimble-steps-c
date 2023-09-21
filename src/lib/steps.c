@@ -93,11 +93,10 @@ void nbsStepsInit(NbsSteps* self, struct ImprintAllocator* allocator, size_t max
 {
     tc_mem_clear_type(self);
     self->log = log;
-    const size_t maxCombinedOctetSizeAllowed = 256;
-    if (maxOctetSizeForCombinedStep > maxCombinedOctetSizeAllowed) {
+    if (maxOctetSizeForCombinedStep > NimbleStepMaxCombinedStepOctetCount) {
         CLOG_C_ERROR(&self->log,
                      "nbsStepsInit: only supports combined input sizes up to %zu octets, but encountered %zu",
-                     maxCombinedOctetSizeAllowed, maxOctetSizeForCombinedStep)
+                     NimbleStepMaxCombinedStepOctetCount, maxOctetSizeForCombinedStep)
     }
 
     size_t bufferOctetSize = maxOctetSizeForCombinedStep * (NBS_WINDOW_SIZE / 2);
