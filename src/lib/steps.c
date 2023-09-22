@@ -13,7 +13,7 @@
 /// @return negative on error
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
 {
-    if (octetCount < 3u) {
+    if (octetCount < NimbleStepMinimumSingleStepOctetCount) {
         CLOG_SOFT_ERROR("combined step is too small")
         return -1;
     }
@@ -24,7 +24,7 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
     uint8_t participantCountInStep;
     fldInStreamReadUInt8(&stepInStream, &participantCountInStep);
 
-    if (participantCountInStep > NimbleStepMaxCombinedStepOctetCount) {
+    if (participantCountInStep > NimbleStepMaxParticipantCount) {
         CLOG_SOFT_ERROR("combined step: participant count is too high %d", participantCountInStep)
         return -4;
     }
@@ -40,7 +40,7 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
         } else {
             uint8_t octetCountForStep;
             fldInStreamReadUInt8(&stepInStream, &octetCountForStep);
-            if (octetCountForStep > 128) {
+            if (octetCountForStep > NimbleStepMaxSingleStepOctetCount) {
                 CLOG_SOFT_ERROR("combined step: individual step size is suspicious %d", octetCountForStep)
                 return -6;
             }
@@ -52,7 +52,7 @@ int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
             }
         }
 
-        if (participantId > 8) {
+        if (participantId > NimbleStepMaxParticipantIdValue) {
             CLOG_SOFT_ERROR("combined step: participantId is too high %u", participantId)
             return -3;
         }
