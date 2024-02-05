@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 #include <clog/clog.h>
 #include <flood/in_stream.h>
+#include <mash/murmur.h>
 #include <nimble-steps/steps.h>
 #include <stdbool.h>
 
@@ -424,7 +425,8 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
         CLOG_EXECUTE(int indexToShow = nbsStepsGetIndexForStep(self, stepIdToShow);)
         CLOG_EXECUTE(int readCount = nbsStepsReadAtIndex(self, indexToShow, tempStepBuffer, 1024);)
         extraInfo[0] = 0;
-        CLOG_C_VERBOSE(&self->log, "  %zu: %08X (octet count: %d)  %s", i, stepIdToShow, readCount, extraInfo)
+        CLOG_C_VERBOSE(&self->log, "  %zu: %08X (octet count:%d, hash:%08X)  %s", i, stepIdToShow, readCount,
+                       mashMurmurHash3(tempStepBuffer, (size_t) readCount), extraInfo)
         stepIdToShow++;
     }
 #else

@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 #include <clog/clog.h>
 #include <imprint/allocator.h>
+#include <mash/murmur.h>
 #include <nimble-steps/pending_steps.h>
 
 /// Initializes a pending step
@@ -119,6 +120,8 @@ int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_
     *outLength = item->payloadLength;
     *outId = self->readId++;
     item->isInUse = 0;
+
+    //CLOG_C_INFO(&self->log, "read step %08X hash:%08X", *outId, mashMurmurHash3(item->payload, item->payloadLength))
 
     int code = nbsStepsVerifyStep(item->payload, item->payloadLength);
     if (code < 0) {
@@ -286,8 +289,8 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
             if (tc_memcmp(existingStep->payload, payload, payloadLength) == 0) {
                 return 0;
             }
-            CLOG_SOFT_ERROR("was already in use with different data %d", index)
-            return -3;
+            CLOG_ERROR("was already in use with different data %d", index)
+            // return -3;
         }
         CLOG_SOFT_ERROR("was already in use %d", index)
         return -2;
@@ -309,6 +312,9 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
     if (existingStep->payload) {
         IMPRINT_FREE(self->allocatorWithFree, (void*) existingStep->payload);
     }
+
+    CLOG_C_VERBOSE(&self->log, "set pending step %08X hash:%08X", stepId, mashMurmurHash3(payload, payloadLength))
+
     nbsPendingStepInit(existingStep, payload, payloadLength, stepId, self->allocatorWithFree);
     self->debugCount++;
     return 1;
