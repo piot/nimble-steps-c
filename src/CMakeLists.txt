@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.17)
 project(nimble_steps C)
 
-add_subdirectory("deps/piot/clog/src/lib")
-add_subdirectory("deps/piot/tiny-libc/src/lib")
-add_subdirectory("deps/piot/flood-c/src/lib")
-add_subdirectory("deps/piot/discoid-c/src/lib")
-add_subdirectory("deps/piot/imprint/src/lib")
-add_subdirectory("lib")
-add_subdirectory("test")
+add_subdirectory(lib)
+add_subdirectory(test)
 # add_subdirectory("examples")
