@@ -18,3 +18,4 @@ _deps
 cmake-*/
 src/test/nimble_steps_test
 src/lib/libnimble-steps.a
+.DS_Store
