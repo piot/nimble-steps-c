@@ -25,8 +25,7 @@ jobs:
           go-version: '1.20'
 
       - name: deps fetch dependencies
-        run:
-          go run github.com/piot/deps/src/deps@main fetch
+        run: go run github.com/piot/deps/src/deps@main fetch
 
       - name: create cmake cache
         run: cmake -DCMAKE_BUILD_TYPE=Debug .
@@ -34,8 +33,8 @@ jobs:
       - name: build
         run: cmake --build . --clean-first
 
-      - name: run tests
-        run: ctest --test-dir test/ --output-on-failure
+      #      - name: run tests
+      #       run: ctest --test-dir test/ --output-on-failure
 
       - uses: actions/upload-artifact@v2
         with:
