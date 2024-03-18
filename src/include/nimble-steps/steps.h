@@ -30,6 +30,7 @@ typedef struct NbsSteps {
     StepInfo infos[NBS_WINDOW_SIZE];
     size_t infoHeadIndex;
     size_t infoTailIndex;
+    bool isInitialized;
     Clog log;
 } NbsSteps;
 

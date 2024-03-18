@@ -72,6 +72,7 @@ void nbsStepsReInit(NbsSteps* self, StepId initialId)
     self->expectedReadId = initialId;
     self->infoHeadIndex = 0;
     self->infoTailIndex = 0;
+    self->isInitialized = true;
     discoidBufferReset(&self->stepsData);
 }
 
@@ -81,6 +82,7 @@ void nbsStepsReInit(NbsSteps* self, StepId initialId)
 void nbsStepsReset(NbsSteps* self)
 {
     nbsStepsReInit(self, NIMBLE_STEP_MAX);
+    self->isInitialized = false;
 }
 
 /// Initializes the steps buffer and allocates all memory needed
