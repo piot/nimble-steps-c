@@ -121,7 +121,7 @@ int nbsPendingStepsTryRead(NbsPendingSteps* self, const uint8_t** outData, size_
     *outId = self->readId++;
     item->isInUse = 0;
 
-    //CLOG_C_INFO(&self->log, "read step %08X hash:%08X", *outId, mashMurmurHash3(item->payload, item->payloadLength))
+    // CLOG_C_INFO(&self->log, "read step %08X hash:%08X", *outId, mashMurmurHash3(item->payload, item->payloadLength))
 
     int code = nbsStepsVerifyStep(item->payload, item->payloadLength);
     if (code < 0) {
@@ -158,7 +158,7 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
             // return foundParticipantCount;
         }
 
-        //CLOG_C_VERBOSE(&self->log, "writing authoritative %08X of size:%zu", outId, length)
+        // CLOG_C_VERBOSE(&self->log, "writing authoritative %08X of size:%zu", outId, length)
         int result = nbsStepsWrite(target, outId, data, length);
         if (result < 0) {
             return result;
@@ -236,7 +236,8 @@ void nbsPendingStepsRangesDebugOutput(const NbsPendingRange* ranges, const char*
 #if defined CLOG_LOG_ENABLED
     CLOG_C_VERBOSE(&log, "--- ranges '%s' number of ranges:%zu", debug, maxCount)
     for (size_t i = 0; i < maxCount; ++i) {
-        CLOG_C_VERBOSE(&log, "%zu: %08X count:%zu", i, ranges[i].startId, ranges[i].count)
+        CLOG_C_VERBOSE(&log, "%zu: %08X - %08X (count:%zu)", i, ranges[i].startId,
+                       (StepId) (ranges[i].startId + ranges[i].count - 1), ranges[i].count)
     }
 #else
     (void) ranges;
@@ -313,7 +314,7 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
         IMPRINT_FREE(self->allocatorWithFree, (void*) existingStep->payload);
     }
 
-    //CLOG_C_VERBOSE(&self->log, "set pending step %08X hash:%08X", stepId, mashMurmurHash3(payload, payloadLength))
+    // CLOG_C_VERBOSE(&self->log, "set pending step %08X hash:%08X", stepId, mashMurmurHash3(payload, payloadLength))
 
     nbsPendingStepInit(existingStep, payload, payloadLength, stepId, self->allocatorWithFree);
     self->debugCount++;
