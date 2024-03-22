@@ -7,9 +7,8 @@
 
 #include <clog/clog.h>
 #include <discoid/circular_buffer.h>
-#include <stdbool.h>
 #include <nimble-steps/types.h>
-
+#include <stdbool.h>
 
 #define NBS_WINDOW_SIZE (240)
 #define NBS_RETREAT(index) tc_modulo((index - 1), NBS_WINDOW_SIZE)
@@ -31,6 +30,7 @@ typedef struct NbsSteps {
     size_t infoHeadIndex;
     size_t infoTailIndex;
     bool isInitialized;
+    uint32_t warningAboutSkippedSteps;
     Clog log;
 } NbsSteps;
 

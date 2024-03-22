@@ -340,10 +340,10 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     info->stepId = stepId;
     info->octetCount = stepSize;
     info->positionInBuffer = self->stepsData.writeIndex;
-    CLOG_C_VERBOSE(&self->log,
-                   "nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu "
-                   "octetCount: %zu stored steps: %zu",
-                   stepId, self->infoHeadIndex, info->positionInBuffer, info->octetCount, self->stepsCount + 1)
+    //CLOG_C_VERBOSE(&self->log,
+      //             "nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu "
+        //           "octetCount: %zu stored steps: %zu",
+          //         stepId, self->infoHeadIndex, info->positionInBuffer, info->octetCount, self->stepsCount + 1)
     NBS_ADVANCE(self->infoHeadIndex);
 
     int errorCode;

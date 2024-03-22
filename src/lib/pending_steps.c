@@ -158,7 +158,7 @@ int nbsPendingStepsCopy(NbsSteps* target, NbsPendingSteps* self)
             // return foundParticipantCount;
         }
 
-        CLOG_C_VERBOSE(&self->log, "writing authoritative %08X of size:%zu", outId, length)
+        //CLOG_C_VERBOSE(&self->log, "writing authoritative %08X of size:%zu", outId, length)
         int result = nbsStepsWrite(target, outId, data, length);
         if (result < 0) {
             return result;
@@ -313,7 +313,7 @@ int nbsPendingStepsTrySet(NbsPendingSteps* self, StepId stepId, const uint8_t* p
         IMPRINT_FREE(self->allocatorWithFree, (void*) existingStep->payload);
     }
 
-    CLOG_C_VERBOSE(&self->log, "set pending step %08X hash:%08X", stepId, mashMurmurHash3(payload, payloadLength))
+    //CLOG_C_VERBOSE(&self->log, "set pending step %08X hash:%08X", stepId, mashMurmurHash3(payload, payloadLength))
 
     nbsPendingStepInit(existingStep, payload, payloadLength, stepId, self->allocatorWithFree);
     self->debugCount++;
