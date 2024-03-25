@@ -16,6 +16,6 @@ static const size_t NimbleStepMaxParticipantCount = 16;
 static const size_t NimbleStepMaxParticipantIdValue = NimbleStepMaxParticipantCount * 3;
 static const size_t NimbleStepMaxCombinedStepOctetCount = 512; // NimbleStepMaxSingleStepOctetCount *
 // NimbleStepMaxParticipantCount;
-static const size_t NimbleStepMinimumSingleStepOctetCount = 3u;
+static const size_t NimbleStepMinimumSingleStepOctetCount = 1u;
 
 #endif
