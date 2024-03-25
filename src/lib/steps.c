@@ -324,8 +324,8 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     }
 
     if (self->expectedWriteId != stepId) {
-        CLOG_C_SOFT_ERROR(&self->log, "expected write %08X but got %08X", self->expectedWriteId, stepId)
-        return -4;
+        CLOG_C_ERROR(&self->log, "expected write %08X but got %08X", self->expectedWriteId, stepId)
+        //return -4;
     }
 
     int code = nbsStepsVerifyStep(data, stepSize);
