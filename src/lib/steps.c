@@ -413,7 +413,6 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
     (void) flags;
 
 #if defined CLOG_LOG_ENABLED
-    uint8_t tempStepBuffer[1024];
     size_t count = self->stepsCount;
     if (count == 0) {
         CLOG_C_VERBOSE(&self->log, "=== nimble steps '%s' empty", debug)
@@ -421,6 +420,8 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
         CLOG_C_VERBOSE(&self->log, "=== nimble steps '%s' from %08X to %08X (count:%zu)", debug, self->expectedReadId,
                        self->expectedWriteId - 1, count)
     }
+#if defined STEPS_DEBUG_EXTRA_INFO
+    uint8_t tempStepBuffer[1024];
     char extraInfo[1024];
     StepId stepIdToShow = self->expectedReadId;
     for (size_t i = 0; i < count; ++i) {
@@ -431,6 +432,8 @@ void nbsStepsDebugOutput(const NbsSteps* self, const char* debug, int flags)
                        mashMurmurHash3(tempStepBuffer, (size_t) readCount), extraInfo)
         stepIdToShow++;
     }
+#endif
+
 #else
     (void) self;
     (void) debug;

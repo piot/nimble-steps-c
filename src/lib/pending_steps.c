@@ -193,19 +193,20 @@ int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvaila
         int bit = (mask >> i) & 0x1;
         if (!bit && !isInsideRange) {
             if ((size_t) i + maskStartsAtOneLessStepId >= maximumAvailablePlusOneStepId) {
-                CLOG_DEBUG("found start but skipping since %d + %d > %d start", i, maximumAvailablePlusOneStepId,
-                           maskStartsAtOneLessStepId)
+                //                CLOG_VERBOSE("found start but skipping since %d + %08X > %08X start", i,
+                //                maximumAvailablePlusOneStepId,
+                //                         maskStartsAtOneLessStepId)
                 continue;
             }
             StepId id = maskStartsAtOneLessStepId - (StepId) i - 1;
-            CLOG_DEBUG("found start %u", id)
+            // CLOG_VERBOSE("found start %08X", id)
             ranges[index].startId = id;
             ranges[index].count = 0;
             isInsideRange = true;
             rangeIndex = i;
         } else if (bit && isInsideRange) {
             size_t count = (size_t) (rangeIndex - i);
-            CLOG_DEBUG("received a step and finishing the range with count %zu", count)
+            // CLOG_VERBOSE("received a step and finishing the range with count %zu", count)
             ranges[index].count = count;
             index++;
             if (stepCountTotal + count >= stepCountMax - 1) {
@@ -223,7 +224,7 @@ int nbsPendingStepsRanges(StepId maskStartsAtOneLessStepId, StepId maximumAvaila
     }
 
     if (isInsideRange) {
-        CLOG_DEBUG("add last range %d", rangeIndex)
+        // CLOG_VERBOSE("add last range %d", rangeIndex)
         ranges[index - 1].count = (size_t) rangeIndex;
         index++;
     }
