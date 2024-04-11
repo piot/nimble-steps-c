@@ -123,7 +123,7 @@ static int advanceInfoTail(NbsSteps* self, const StepInfo** outInfo)
     NBS_ADVANCE(self->infoTailIndex);
 
     if (info->stepId != self->expectedReadId) {
-        CLOG_C_ERROR(&self->log, "expected to read %d but encountered %d", self->expectedReadId, info->stepId)
+        CLOG_C_ERROR(&self->log, "expected to read %u but encountered %u", self->expectedReadId, info->stepId)
         //*outInfo = 0;
         // return -3;
     }
