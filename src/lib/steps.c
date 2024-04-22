@@ -173,6 +173,41 @@ int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget
     return nbsStepsReadHelper(self, info, data, maxTarget);
 }
 
+/// Reads the exact step Id. Discards old steps if any.
+/// @param self steps
+/// @param needStepId to exact stepId to read
+/// @param data the step payload will be copied to this
+/// @param maxTarget maximum number of octets to copy to data
+/// @return octet count for the step read, or negative value on error
+int nbsStepsReadExactStepId(NbsSteps* self, StepId needStepId, uint8_t* data, size_t maxTarget)
+{
+    StepId encounteredStepId;
+
+    int readStepOctetCount = nbsStepsRead(self, &encounteredStepId, data, maxTarget);
+
+    // CLOG_VERBOSE("authenticate: party %d, found step:%08X, octet count: %d",participant->inParty->id,
+    // encounteredStepId, stepOctetCount);
+
+    if (readStepOctetCount < 0) {
+        CLOG_C_SOFT_ERROR(&self->log, "couldn't read from party %d, server was hoping for step %08X",
+                          readStepOctetCount, needStepId)
+        return readStepOctetCount;
+    }
+
+    if (encounteredStepId != needStepId) {
+        CLOG_C_VERBOSE(&self->log,
+                       "buffer could not provide the ID the caller was looking for. needed %08X, but got %08X",
+                       needStepId, encounteredStepId)
+        int discardErr = nbsStepsDiscardUpTo(self, needStepId + 1);
+        if (discardErr < 0) {
+            CLOG_C_ERROR(&self->log, "could not discard including %d", discardErr)
+        }
+        return -1;
+    }
+
+    return readStepOctetCount;
+}
+
 /// Gets an index for a specific tickId (stepId)
 /// @param self steps
 /// @param stepId id to get the index fo
@@ -325,7 +360,7 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
 
     if (self->expectedWriteId != stepId) {
         CLOG_C_ERROR(&self->log, "expected write %08X but got %08X", self->expectedWriteId, stepId)
-        //return -4;
+        // return -4;
     }
 
     int code = nbsStepsVerifyStep(data, stepSize);
@@ -340,10 +375,10 @@ int nbsStepsWrite(NbsSteps* self, StepId stepId, const uint8_t* data, size_t ste
     info->stepId = stepId;
     info->octetCount = stepSize;
     info->positionInBuffer = self->stepsData.writeIndex;
-    //CLOG_C_VERBOSE(&self->log,
-      //             "nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu "
-        //           "octetCount: %zu stored steps: %zu",
-          //         stepId, self->infoHeadIndex, info->positionInBuffer, info->octetCount, self->stepsCount + 1)
+    // CLOG_C_VERBOSE(&self->log,
+    //              "nbsStepsWrite stepId: %08X infoHead: %zu pos: %zu "
+    //            "octetCount: %zu stored steps: %zu",
+    //          stepId, self->infoHeadIndex, info->positionInBuffer, info->octetCount, self->stepsCount + 1)
     NBS_ADVANCE(self->infoHeadIndex);
 
     int errorCode;
