@@ -158,7 +158,7 @@ static int nbsStepsReadHelper(NbsSteps* self, const StepInfo* info, uint8_t* dat
 int nbsStepsRead(NbsSteps* self, StepId* stepId, uint8_t* data, size_t maxTarget)
 {
     if (self->stepsCount == 0) {
-        return -2;
+        return NimbleStepErrCollectionIsEmpty;
     }
 
     const StepInfo* info;
@@ -183,14 +183,17 @@ int nbsStepsReadExactStepId(NbsSteps* self, StepId needStepId, uint8_t* data, si
 {
     StepId encounteredStepId;
 
+    if (self->stepsCount == 0) {
+        return NimbleStepErrCollectionIsEmpty;
+    }
+
     int readStepOctetCount = nbsStepsRead(self, &encounteredStepId, data, maxTarget);
 
     // CLOG_VERBOSE("authenticate: party %d, found step:%08X, octet count: %d",participant->inParty->id,
     // encounteredStepId, stepOctetCount);
 
     if (readStepOctetCount < 0) {
-        CLOG_C_SOFT_ERROR(&self->log, "couldn't read from party %d, server was hoping for step %08X",
-                          readStepOctetCount, needStepId)
+        CLOG_C_SOFT_ERROR(&self->log, "couldn't find exact step %08X error:%d", needStepId, readStepOctetCount)
         return readStepOctetCount;
     }
 

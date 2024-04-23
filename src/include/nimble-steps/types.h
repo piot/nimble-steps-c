@@ -18,4 +18,6 @@ static const size_t NimbleStepMaxCombinedStepOctetCount = 512; // NimbleStepMaxS
 // NimbleStepMaxParticipantCount;
 static const size_t NimbleStepMinimumSingleStepOctetCount = 1u;
 
+static int NimbleStepErrCollectionIsEmpty = -1;
+
 #endif
