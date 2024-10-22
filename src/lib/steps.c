@@ -8,58 +8,19 @@
 #include <nimble-steps/steps.h>
 #include <stdbool.h>
 
-/// Tries to do a sanity check of a payload to make sure it conforms to the format for a combined step
+/// Tries to do a sanity check of a payload to make sure it conforms to the format for a step
 /// @param payload application specific payload
 /// @param octetCount number of octets
 /// @return negative on error
 int nbsStepsVerifyStep(const uint8_t* payload, size_t octetCount)
 {
+    (void) payload;
     if (octetCount < NimbleStepMinimumSingleStepOctetCount) {
         CLOG_SOFT_ERROR("combined step is too small")
         return -1;
     }
 
-    FldInStream stepInStream;
-    fldInStreamInit(&stepInStream, payload, octetCount);
-
-    uint8_t participantCountInStep;
-    fldInStreamReadUInt8(&stepInStream, &participantCountInStep);
-
-    if (participantCountInStep > NimbleStepMaxParticipantCount) {
-        CLOG_SOFT_ERROR("combined step: participant count is too high %d", participantCountInStep)
-        return -4;
-    }
-
-    for (size_t i = 0; i < participantCountInStep; ++i) {
-        uint8_t participantId;
-        fldInStreamReadUInt8(&stepInStream, &participantId);
-        bool masked = participantId & 0x80;
-        if (masked) {
-            participantId &= 0x7f;
-            uint8_t connectState;
-            fldInStreamReadUInt8(&stepInStream, &connectState);
-        } else {
-            uint8_t octetCountForStep;
-            fldInStreamReadUInt8(&stepInStream, &octetCountForStep);
-            if (octetCountForStep > NimbleStepMaxSingleStepOctetCount) {
-                CLOG_SOFT_ERROR("combined step: individual step size is suspicious %d", octetCountForStep)
-                return -6;
-            }
-
-            stepInStream.p += octetCountForStep;
-            stepInStream.pos += octetCountForStep;
-            if (stepInStream.pos > stepInStream.size) {
-                return -2;
-            }
-        }
-
-        if (participantId > NimbleStepMaxParticipantIdValue) {
-            CLOG_SOFT_ERROR("combined step: participantId is too high %u", participantId)
-            return -3;
-        }
-    }
-
-    return participantCountInStep;
+    return 0;
 }
 
 /// Clears the buffer and sets a new starting TickId
